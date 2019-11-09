@@ -2,6 +2,13 @@
 
 Tiny语言是[《编译原理及实践》](https://book.douban.com/subject/1088057/)书中定义的玩具语言。
 
+实现原理：
+
+- [CASL汇编器的设计与实现.pdf](./docs/casl-assembler.pdf)
+- [COMET虚拟机的设计与实现.pdf](./docs/comet-vm.pdf)
+
+## 例子
+
 废话少说，先给个例子：
 
 ```
