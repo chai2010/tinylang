@@ -25,10 +25,10 @@ type Coment struct {
 }
 
 type CPU struct {
-	PC  uint16         // 指令计数器
-	FR  int16          // 标志寄存器
-	GR  [5]int16       // 通用寄存器
-	Mem [1 << 16]int16 // 64KB内存
+	PC  uint16          // 指令计数器
+	FR  int16           // 标志寄存器
+	GR  [5]uint16       // 通用寄存器
+	Mem [1 << 16]uint16 // 64KB内存
 }
 
 type stdReadWriter struct{}
@@ -40,14 +40,12 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 	return os.Stdout.Write(p)
 }
 
-func NewComent(rw io.ReadWriter, prog []int16, pc int) *Coment {
+func NewComent(rw io.ReadWriter, prog []uint16, pc int) *Coment {
 	p := &Coment{RW: rw}
 	copy(p.Mem[:], prog)
 
 	p.PC = uint16(pc)
-
-	var sp = uint16(SP_START)
-	p.GR[4] = int16(sp)
+	p.GR[4] = SP_START
 
 	if p.RW == nil {
 		p.RW = new(stdReadWriter)
@@ -71,9 +69,9 @@ func (p *Coment) StepRun() {
 	}
 
 	var op = p.Mem[p.PC] / 0x100
-	var gr = p.Mem[p.PC] % 0x100 / 0x10
+	var gr = (p.Mem[p.PC] % 0x100) / 0x10
 	var xr = p.Mem[p.PC] % 0x10
-	var adr = uint16(p.Mem[p.PC+1])
+	var adr = p.Mem[p.PC+1]
 
 	if gr < 0 || gr > 4 {
 		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
@@ -105,101 +103,101 @@ func (p *Coment) StepRun() {
 		p.Mem[adr] = p.GR[gr]
 	case LEA:
 		p.PC += 2
-		p.GR[gr] = int16(adr)
-		p.FR = p.GR[gr]
+		p.GR[gr] = adr
+		p.FR = int16(p.GR[gr])
 	case ADD:
 		p.PC += 2
-		p.GR[gr] += p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) + int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case SUB:
 		p.PC += 2
-		p.GR[gr] -= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) - int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case MUL:
 		p.PC += 2
-		p.GR[gr] *= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) * int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case DIV:
 		p.PC += 2
-		p.GR[gr] /= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) / int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case MOD:
 		p.PC += 2
-		p.GR[gr] %= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) % int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case AND:
 		p.PC += 2
 		p.GR[gr] &= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.FR = int16(p.GR[gr])
 	case OR:
 		p.PC += 2
 		p.GR[gr] |= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.FR = int16(p.GR[gr])
 	case EOR:
 		p.PC += 2
 		p.GR[gr] ^= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.FR = int16(p.GR[gr])
 	case SLA:
 		p.PC += 2
-		p.GR[gr] <<= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) << int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case SRA:
 		p.PC += 2
-		p.GR[gr] >>= p.Mem[adr]
-		p.FR = p.GR[gr]
+		p.GR[gr] = uint16(int16(p.GR[gr]) >> int16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr])
 	case SLL:
 		p.PC += 2
-		p.GR[gr] = int16(uint16(p.GR[gr]) << p.Mem[adr])
-		p.FR = p.GR[gr]
+		p.GR[gr] = p.GR[gr] << p.Mem[adr]
+		p.FR = int16(p.GR[gr])
 	case SRL:
 		p.PC += 2
-		p.GR[gr] = int16(uint16(p.GR[gr]) >> p.Mem[adr])
-		p.FR = p.GR[gr]
+		p.GR[gr] = p.GR[gr] >> p.Mem[adr]
+		p.FR = int16(p.GR[gr])
 	case CPA:
 		p.PC += 2
-		p.FR = p.GR[gr] - p.Mem[adr]
+		p.FR = int16(p.GR[gr]) - int16(p.Mem[adr])
 	case CPL:
 		p.PC += 2
-		p.FR = int16(uint16(p.GR[gr]) - uint16(p.Mem[adr]))
+		p.FR = int16(p.GR[gr] - p.Mem[adr])
 	case JMP:
 		p.PC += 2
-		p.PC = uint16(adr)
+		p.PC = adr
 	case JPZ:
 		p.PC += 2
 		if p.FR >= 0 {
-			p.PC = uint16(adr)
+			p.PC = adr
 		}
 	case JMI:
 		p.PC += 2
 		if p.FR < 0 {
-			p.PC = uint16(adr)
+			p.PC = adr
 		}
 	case JNZ:
 		p.PC += 2
 		if p.FR != 0 {
-			p.PC = uint16(adr)
+			p.PC = adr
 		}
 	case JZE:
 		p.PC += 2
 		if p.FR == 0 {
-			p.PC = uint16(adr)
+			p.PC = adr
 		}
 	case PUSH:
 		p.PC += 2
-		p.Mem[int(uint16(p.GR[4])-1)] = p.Mem[adr]
+		p.Mem[p.GR[4]-1] = p.Mem[adr]
 		p.GR[4]--
 	case POP:
 		p.PC += 1
-		p.GR[gr] = p.Mem[uint16(p.GR[4])]
+		p.GR[gr] = p.Mem[p.GR[4]]
 		p.GR[4]++
 	case CALL:
 		p.PC += 2
-		p.Mem[p.GR[4]-1] = int16(p.PC)
-		p.PC = uint16(p.Mem[adr])
+		p.Mem[p.GR[4]-1] = p.PC
+		p.PC = p.Mem[adr]
 		p.GR[4]--
 	case RET:
 		p.PC += 1
-		p.PC = uint16(p.Mem[p.GR[4]])
+		p.PC = p.Mem[p.GR[4]]
 		p.GR[4]++
 
 	case SYSCALL:
@@ -331,7 +329,7 @@ func (p *Coment) DebugRun() {
 		case "alter", "a":
 			if n == 3 {
 				fmt.Printf("修改内存数据  mem[%x] = %x\n", x1, x2)
-				p.Mem[x1] = int16(x2)
+				p.Mem[x1] = uint16(x2)
 			} else {
 				fmt.Println("修改内存数据 失败！")
 			}
@@ -464,7 +462,7 @@ func (p *Coment) io() {
 		format = "%x"
 	default:
 		p.Mem[IO_FLAG] |= IO_ERROR
-		p.Mem[IO_FLAG] &= ^int16(IO_MAX)
+		p.Mem[IO_FLAG] &= ^uint16(IO_MAX)
 		return
 	}
 
@@ -478,5 +476,5 @@ func (p *Coment) io() {
 		}
 	}
 
-	p.Mem[IO_FLAG] &= ^int16(IO_MAX)
+	p.Mem[IO_FLAG] &= ^uint16(IO_MAX)
 }

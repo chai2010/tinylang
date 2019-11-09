@@ -22,7 +22,7 @@ func main() {
 	vm.DebugRun()
 }
 
-func loadBin(path string) (bin []int16, pc int) {
+func loadBin(path string) (bin []uint16, pc int) {
 	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -38,7 +38,7 @@ func loadBin(path string) (bin []int16, pc int) {
 		log.Fatal(err)
 	}
 
-	data := make([]int16, int(hdr.Len))
+	data := make([]uint16, int(hdr.Len))
 	if err = binary.Read(f, binary.LittleEndian, &data); err != nil {
 		log.Fatal(err)
 	}
