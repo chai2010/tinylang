@@ -17,14 +17,18 @@ const (
 	SP_START = 0xFC00 // SP栈开始地址
 )
 
-type VM struct {
-	PC       int                   // 指令计数器
-	FR       int16                 // 标志寄存器
-	GR       [5]int16              // 通用寄存器
-	Mem      [1 << 16]int16        // 64KB内存
-	RW       io.ReadWriter         // 标准输入输出(VM自身使用)
-	Shutdown bool                  // 已经关机
-	Syscall  func(ctx *VM, id int) // 系统调用(有部分必须要实现的保留编号)
+type Coment struct {
+	CPU
+	RW       io.ReadWriter  // 标准输入输出(VM自身使用)
+	Shutdown bool           // 已经关机
+	Syscall  func(id uint8) // 系统调用(有部分必须要实现的保留编号)
+}
+
+type CPU struct {
+	PC  uint16         // 指令计数器
+	FR  int16          // 标志寄存器
+	GR  [5]int16       // 通用寄存器
+	Mem [1 << 16]int16 // 64KB内存
 }
 
 type stdReadWriter struct{}
@@ -36,9 +40,10 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 	return os.Stdout.Write(p)
 }
 
-func New(rw io.ReadWriter, prog []int16, pc int) *VM {
-	p := &VM{PC: pc, RW: rw}
+func NewComent(rw io.ReadWriter, prog []int16, pc int) *Coment {
+	p := &Coment{RW: rw}
 	copy(p.Mem[:], prog)
+	p.PC = uint16(pc)
 
 	if p.RW == nil {
 		p.RW = new(stdReadWriter)
@@ -47,7 +52,7 @@ func New(rw io.ReadWriter, prog []int16, pc int) *VM {
 	return p
 }
 
-func (p *VM) Run() {
+func (p *Coment) Run() {
 	if p.Shutdown {
 		return
 	}
@@ -56,7 +61,7 @@ func (p *VM) Run() {
 	}
 }
 
-func (p *VM) StepRun() {
+func (p *Coment) StepRun() {
 	if p.Shutdown {
 		return
 	}
@@ -64,7 +69,7 @@ func (p *VM) StepRun() {
 	var op = p.Mem[p.PC] / 0x100
 	var gr = p.Mem[p.PC] % 0x100 / 0x10
 	var xr = p.Mem[p.PC] % 0x10
-	var adr = p.Mem[p.PC+1]
+	var adr = uint16(p.Mem[p.PC+1])
 
 	if gr < 0 || gr > 4 {
 		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
@@ -77,8 +82,11 @@ func (p *VM) StepRun() {
 		return
 	}
 	if xr != 0 {
-		adr += p.GR[xr]
+		adr = uint16(int32(adr) + int32(p.GR[xr]))
 	}
+
+	// 临时: 处理IO
+	p.io()
 
 	// 指令解码
 	switch op {
@@ -93,7 +101,7 @@ func (p *VM) StepRun() {
 		p.Mem[adr] = p.GR[gr]
 	case LEA:
 		p.PC += 2
-		p.GR[gr] = adr
+		p.GR[gr] = int16(adr)
 		p.FR = p.GR[gr]
 	case ADD:
 		p.PC += 2
@@ -151,49 +159,49 @@ func (p *VM) StepRun() {
 		p.FR = int16(uint16(p.GR[gr]) - uint16(p.Mem[adr]))
 	case JMP:
 		p.PC += 2
-		p.PC = int(adr)
+		p.PC = uint16(adr)
 	case JPZ:
 		p.PC += 2
 		if p.FR >= 0 {
-			p.PC = int(adr)
+			p.PC = uint16(adr)
 		}
 	case JMI:
 		p.PC += 2
 		if p.FR < 0 {
-			p.PC = int(adr)
+			p.PC = uint16(adr)
 		}
 	case JNZ:
 		p.PC += 2
 		if p.FR != 0 {
-			p.PC = int(adr)
+			p.PC = uint16(adr)
 		}
 	case JZE:
 		p.PC += 2
 		if p.FR == 0 {
-			p.PC = int(adr)
+			p.PC = uint16(adr)
 		}
 	case PUSH:
 		p.PC += 2
-		p.Mem[int(p.GR[4]-1)] = p.Mem[adr]
+		p.Mem[int(uint16(p.GR[4])-1)] = p.Mem[adr]
 		p.GR[4]--
 	case POP:
 		p.PC += 1
-		p.GR[gr] = p.Mem[p.GR[4]]
+		p.GR[gr] = p.Mem[uint16(p.GR[4])]
 		p.GR[4]++
 	case CALL:
 		p.PC += 2
 		p.Mem[p.GR[4]-1] = int16(p.PC)
-		p.PC = int(p.Mem[adr])
+		p.PC = uint16(p.Mem[adr])
 		p.GR[4]--
 	case RET:
 		p.PC += 1
-		p.PC = int(p.Mem[p.GR[4]])
+		p.PC = uint16(p.Mem[p.GR[4]])
 		p.GR[4]++
 
 	case SYSCALL:
 		if p.Syscall != nil {
 			id := p.Mem[p.PC] % 0x100
-			p.Syscall(p, int(id))
+			p.Syscall(uint8(id))
 		}
 
 	default:
@@ -202,7 +210,7 @@ func (p *VM) StepRun() {
 	}
 }
 
-func (p *VM) DebugRun() {
+func (p *Coment) DebugRun() {
 	var (
 		backup  = *p
 		stepcnt int
@@ -263,7 +271,7 @@ func (p *VM) DebugRun() {
 		case "jump", "j":
 			if n >= 2 {
 				fmt.Printf("指令跳转到 %x\n", x1)
-				p.PC = x1
+				p.PC = uint16(x1)
 			} else {
 				fmt.Println("错误: 缺少跳转地址")
 			}
@@ -292,6 +300,7 @@ func (p *VM) DebugRun() {
 		case "iMem", "imem", "i":
 			fmt.Println("显示内存指令")
 
+			x1 := uint16(x1)
 			if n < 2 {
 				x1 = p.PC
 			}
@@ -302,6 +311,7 @@ func (p *VM) DebugRun() {
 			fmt.Println(p.InsString(x1, x2))
 
 		case "dMem", "dmem", "d":
+			x1 := uint16(x1)
 			if n < 2 {
 				x1 = p.PC
 			}
@@ -353,7 +363,7 @@ func (p *VM) DebugRun() {
 	}
 }
 
-func (p *VM) DebugHelp() string {
+func (p *Coment) DebugHelp() string {
 	return `命令列表:
   h)elp           显示本命令列表
   g)o             运行程序直到停止
@@ -370,16 +380,19 @@ func (p *VM) DebugHelp() string {
 `
 }
 
-func (p *VM) InsString(pc, n int) string {
+func (p *Coment) InsString(pc uint16, n int) string {
+	println("InsString", pc, n)
 	var buf bytes.Buffer
 	for i := 0; i < n; i++ {
 		var (
 			op        = p.Mem[pc] / 0x100
 			gr        = p.Mem[pc] % 0x100 / 0x10
 			xr        = p.Mem[pc] % 0x10
-			adr       = p.Mem[pc+1]
+			adr       = uint16(p.Mem[pc+1])
 			syscallId = p.Mem[pc] % 0x100
 		)
+
+		println("InsString:", i, op, gr)
 
 		if op > RET {
 			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
@@ -405,17 +418,57 @@ func (p *VM) InsString(pc, n int) string {
 			if xr != 0 {
 				fmt.Fprintf(&buf, ", GR%d", xr)
 			}
-			fmt.Println()
+			fmt.Fprintln(&buf)
 			pc += 2
 		default:
 			fmt.Fprintf(&buf, "%x", adr)
 			if xr != 0 {
 				fmt.Fprintf(&buf, ", GR%d", xr)
 			}
-			fmt.Println()
+			fmt.Fprintln(&buf)
 			pc += 2
 		}
 	}
 
+	println("a::", buf.String())
 	return buf.String()
+}
+
+func (p *Coment) io() {
+	cnt := p.Mem[IO_FLAG] & IO_MAX
+	if cnt == 0 {
+		return
+	}
+
+	fio := p.Mem[IO_FLAG] & IO_FIO
+	typ := p.Mem[IO_FLAG] & IO_TYPE
+	adr := p.Mem[IO_ADDR]
+
+	var format string
+	switch {
+	case typ == IO_CHR:
+		format = "%c"
+	case typ == IO_OCT:
+		format = "%o"
+	case typ == IO_DEC:
+		format = "%d"
+	case typ == IO_HEX:
+		format = "%x"
+	default:
+		p.Mem[IO_FLAG] |= IO_ERROR
+		p.Mem[IO_FLAG] &= ^int16(IO_MAX)
+		return
+	}
+
+	for i := 0; i < int(cnt); i++ {
+		if fio == IO_IN {
+			fmt.Fscanf(p.RW, format, &p.Mem[adr])
+			adr++
+		} else {
+			fmt.Fprintf(p.RW, format, &p.Mem[adr])
+			adr++
+		}
+	}
+
+	p.Mem[IO_FLAG] &= ^int16(IO_MAX)
 }

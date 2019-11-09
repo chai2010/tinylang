@@ -587,6 +587,7 @@ init(int n, char*v[])
 int
 cometMain(int argc, char *argv[])
 {
+	printf("sizeof(off_t): %d\n", sizeof(off_t));
 	init(argc, argv);
 	if(debug) comet_debug();
 	else while(comet_step());
