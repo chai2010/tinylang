@@ -18,13 +18,13 @@ const (
 )
 
 type VM struct {
-	PC       int             // 指令计数器
-	FR       uint16          // 标志寄存器
-	GR       [5]uint16       // 通用寄存器
-	Mem      [1 << 16]uint16 // 64KB内存
-	RW       io.ReadWriter   // 标准输入输出(VM自身使用)
-	Shutdown bool            // 已经关机
-	Syscall  func(*VM)       // 系统调用(有部分必须要实现的保留编号)
+	PC       int                   // 指令计数器
+	FR       int16                 // 标志寄存器
+	GR       [5]int16              // 通用寄存器
+	Mem      [1 << 16]int16        // 64KB内存
+	RW       io.ReadWriter         // 标准输入输出(VM自身使用)
+	Shutdown bool                  // 已经关机
+	Syscall  func(ctx *VM, id int) // 系统调用(有部分必须要实现的保留编号)
 }
 
 type stdReadWriter struct{}
@@ -36,7 +36,7 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 	return os.Stdout.Write(p)
 }
 
-func New(rw io.ReadWriter, prog []uint16, pc int) *VM {
+func New(rw io.ReadWriter, prog []int16, pc int) *VM {
 	p := &VM{PC: pc, RW: rw}
 	copy(p.Mem[:], prog)
 
@@ -80,39 +80,125 @@ func (p *VM) StepRun() {
 		adr += p.GR[xr]
 	}
 
-	// 处理IO外设
-	p.io()
-
 	// 指令解码
 	switch op {
 	case HALT:
+		p.PC += 1
+		p.Shutdown = true
 	case LD:
+		p.PC += 2
+		p.GR[gr] = p.Mem[adr]
 	case ST:
+		p.PC += 2
+		p.Mem[adr] = p.GR[gr]
 	case LEA:
+		p.PC += 2
+		p.GR[gr] = adr
+		p.FR = p.GR[gr]
 	case ADD:
+		p.PC += 2
+		p.GR[gr] += p.Mem[adr]
+		p.FR = p.GR[gr]
 	case SUB:
+		p.PC += 2
+		p.GR[gr] -= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case MUL:
+		p.PC += 2
+		p.GR[gr] *= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case DIV:
+		p.PC += 2
+		p.GR[gr] /= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case MOD:
+		p.PC += 2
+		p.GR[gr] %= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case AND:
+		p.PC += 2
+		p.GR[gr] &= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case OR:
+		p.PC += 2
+		p.GR[gr] |= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case EOR:
+		p.PC += 2
+		p.GR[gr] ^= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case SLA:
+		p.PC += 2
+		p.GR[gr] <<= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case SRA:
+		p.PC += 2
+		p.GR[gr] >>= p.Mem[adr]
+		p.FR = p.GR[gr]
 	case SLL:
+		p.PC += 2
+		p.GR[gr] = int16(uint16(p.GR[gr]) << p.Mem[adr])
+		p.FR = p.GR[gr]
 	case SRL:
+		p.PC += 2
+		p.GR[gr] = int16(uint16(p.GR[gr]) >> p.Mem[adr])
+		p.FR = p.GR[gr]
 	case CPA:
+		p.PC += 2
+		p.FR = p.GR[gr] - p.Mem[adr]
 	case CPL:
+		p.PC += 2
+		p.FR = int16(uint16(p.GR[gr]) - uint16(p.Mem[adr]))
 	case JMP:
+		p.PC += 2
+		p.PC = int(adr)
 	case JPZ:
+		p.PC += 2
+		if p.FR >= 0 {
+			p.PC = int(adr)
+		}
 	case JMI:
+		p.PC += 2
+		if p.FR < 0 {
+			p.PC = int(adr)
+		}
 	case JNZ:
+		p.PC += 2
+		if p.FR != 0 {
+			p.PC = int(adr)
+		}
 	case JZE:
+		p.PC += 2
+		if p.FR == 0 {
+			p.PC = int(adr)
+		}
 	case PUSH:
+		p.PC += 2
+		p.Mem[int(p.GR[4]-1)] = p.Mem[adr]
+		p.GR[4]--
 	case POP:
+		p.PC += 1
+		p.GR[gr] = p.Mem[p.GR[4]]
+		p.GR[4]++
 	case CALL:
+		p.PC += 2
+		p.Mem[p.GR[4]-1] = int16(p.PC)
+		p.PC = int(p.Mem[adr])
+		p.GR[4]--
 	case RET:
+		p.PC += 1
+		p.PC = int(p.Mem[p.GR[4]])
+		p.GR[4]++
+
+	case SYSCALL:
+		if p.Syscall != nil {
+			id := p.Mem[p.PC] % 0x100
+			p.Syscall(p, int(id))
+		}
+
 	default:
+		p.Shutdown = true
+		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
 	}
 }
 
@@ -231,7 +317,7 @@ func (p *VM) DebugRun() {
 		case "alter", "a":
 			if n == 3 {
 				fmt.Printf("修改内存数据  mem[%x] = %x\n", x1, x2)
-				p.Mem[x1] = uint16(x2)
+				p.Mem[x1] = int16(x2)
 			} else {
 				fmt.Println("修改内存数据 失败！")
 			}
@@ -332,8 +418,4 @@ func (p *VM) InsString(pc, n int) string {
 	}
 
 	return buf.String()
-}
-
-func (p *VM) io() {
-	// todo
 }
