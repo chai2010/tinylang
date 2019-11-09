@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -11,15 +12,27 @@ import (
 	"github.com/chai2010/tinylang/pkg/spec/comet"
 )
 
+var (
+	flagFile  = flag.String("f", "sum.comet", "comet app file")
+	flagDebug = flag.Bool("d", false, "debug mode")
+)
+
 func init() {
 	log.SetFlags(log.Lshortfile)
 }
 
 func main() {
-	bin, pc := loadBin("sum.comet")
-	fmt.Println(pc, len(bin), bin)
+	flag.Parse()
+
+	bin, pc := loadBin(*flagFile)
+	fmt.Printf("PC: %d; BIN_LEN: %d\n", pc, len(bin))
+
 	vm := comet.NewComent(nil, bin, pc)
-	vm.DebugRun()
+	if *flagDebug {
+		vm.DebugRun()
+	} else {
+		vm.Run()
+	}
 }
 
 func loadBin(path string) (bin []uint16, pc int) {

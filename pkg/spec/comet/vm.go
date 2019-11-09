@@ -471,7 +471,7 @@ func (p *Coment) io() {
 			fmt.Fscanf(p.RW, format, &p.Mem[adr])
 			adr++
 		} else {
-			fmt.Fprintf(p.RW, format, &p.Mem[adr])
+			fmt.Fprintf(p.RW, format, p.Mem[adr])
 			adr++
 		}
 	}
