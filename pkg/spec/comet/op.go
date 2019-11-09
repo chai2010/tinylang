@@ -24,16 +24,16 @@ const (
 	CPA = 0x0C // 算术比较, (GR)-(E), 有符号数, 设置FR
 	CPL = 0x0D // 逻辑比较, (GR)-(E), 无符号数, 设置FR
 
-	SLA = 0x0E // 算术左移, 空出的的位置补0
-	SRA = 0x0F // 算术右移, 空出的的位置被置成第0位的值
-	SLL = 0x10 // 逻辑左移, 空出的的位置补0
-	SRL = 0x11 // 逻辑右移, 空出的的位置被置0
+	SLA = 0x0E // 算术左移, GR = GR<<(E), 空出的的位置补0
+	SRA = 0x0F // 算术右移, GR = GR>>(E), 空出的的位置被置成第0位的值
+	SLL = 0x10 // 逻辑左移, GR = GR<<(E), 空出的的位置补0
+	SRL = 0x11 // 逻辑右移, GR = GR>>(E), 空出的的位置被置0
 
 	JMP = 0x12 // 无条件跳转, PC = E
-	JPZ = 0x13 // 不小于跳转, PC = E
-	JMI = 0x14 // 小于跳转, PC = E
-	JNZ = 0x15 // 不等于0, PC = E
-	JZE = 0x16 // 等于0跳转, PC = E
+	JPZ = 0x13 // FR不小于跳转, PC = E
+	JMI = 0x14 // FR小于跳转, PC = E
+	JNZ = 0x15 // FR不等于0, PC = E
+	JZE = 0x16 // FR等于0跳转, PC = E
 
 	PUSH = 0x17 // 进栈, SP = (SP)-1, (SP) = E
 	POP  = 0x18 // 出栈, GR = ((SP)), SP = (SP)+1
@@ -45,28 +45,45 @@ const (
 )
 
 // COMET机器指令长度和名字
-var OpTab = []struct {
+var OpTab = [...]struct {
 	Op   int
 	Name string
 	Len  int
 }{
-	{HALT, "HALT", 1},
+	HALT: {HALT, "HALT", 1},
 
-	{LD, "LD", 2}, {ST, "ST", 2}, {LEA, "LEA", 2},
+	LD:  {LD, "LD", 2},
+	ST:  {ST, "ST", 2},
+	LEA: {LEA, "LEA", 2},
 
-	{ADD, "ADD", 2}, {SUB, "SUB", 2},
-	{MUL, "MUL", 2}, {DIV, "DIV", 2}, {MOD, "MOD", 2},
-	{AND, "AND", 2}, {OR, "OR", 2}, {EOR, "EOR", 2},
+	ADD: {ADD, "ADD", 2},
+	SUB: {SUB, "SUB", 2},
+	MUL: {MUL, "MUL", 2},
+	DIV: {DIV, "DIV", 2},
+	MOD: {MOD, "MOD", 2},
 
-	{SLA, "SLA", 2}, {SRA, "SRA", 2}, {SLL, "SLL", 2}, {SRL, "SRL", 2},
+	AND: {AND, "AND", 2},
+	OR:  {OR, "OR", 2},
+	EOR: {EOR, "EOR", 2},
 
-	{CPA, "CPA", 2}, {CPL, "CPL", 2},
+	CPA: {CPA, "CPA", 2},
+	CPL: {CPL, "CPL", 2},
 
-	{JMP, "JMP", 2},
-	{JPZ, "JPZ", 2}, {JMI, "JMI", 2}, {JNZ, "JNZ", 2}, {JZE, "JZE", 2},
+	SLA: {SLA, "SLA", 2},
+	SRA: {SRA, "SRA", 2},
+	SLL: {SLL, "SLL", 2},
+	SRL: {SRL, "SRL", 2},
 
-	{PUSH, "PUSH", 2}, {POP, "POP", 1},
-	{CALL, "CALL", 2}, {RET, "RET", 1},
+	JMP: {JMP, "JMP", 2},
+	JPZ: {JPZ, "JPZ", 2},
+	JMI: {JMI, "JMI", 2},
+	JNZ: {JNZ, "JNZ", 2},
+	JZE: {JZE, "JZE", 2},
 
-	{SYSCALL, "SYSCALL", 1},
+	PUSH: {PUSH, "PUSH", 2},
+	POP:  {POP, "POP", 1},
+	CALL: {CALL, "CALL", 2},
+	RET:  {RET, "RET", 1},
+
+	SYSCALL: {SYSCALL, "SYSCALL", 1},
 }

@@ -43,7 +43,11 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 func NewComent(rw io.ReadWriter, prog []int16, pc int) *Coment {
 	p := &Coment{RW: rw}
 	copy(p.Mem[:], prog)
+
 	p.PC = uint16(pc)
+
+	var sp = uint16(SP_START)
+	p.GR[4] = int16(sp)
 
 	if p.RW == nil {
 		p.RW = new(stdReadWriter)
@@ -228,7 +232,7 @@ func (p *Coment) DebugRun() {
 		line, _, _ := bf.ReadLine()
 
 		var cmd, x1, x2 = "", 0, 0
-		n, _ := fmt.Fscanf(bytes.NewBuffer(line), "%s%d%d", &cmd, &x1, &x2)
+		n, _ := fmt.Fscanf(bytes.NewBuffer(line), "%s%x%x", &cmd, &x1, &x2)
 
 		switch cmd {
 		case "help", "h":
@@ -281,20 +285,20 @@ func (p *Coment) DebugRun() {
 
 			switch {
 			case p.FR > 0:
-				fmt.Printf("GR[0] = %4x\tPC = %4x\n", p.GR[0], p.PC)
-				fmt.Printf("GR[1] = %4x\tSP = %4x\n", p.GR[1], p.GR[4])
-				fmt.Printf("GR[2] = %4x\tFR =   00\n", p.GR[2])
-				fmt.Printf("GR[3] = %4x\n", p.GR[3])
+				fmt.Printf("GR[0] = %04x\tPC = %04x\n", p.GR[0], p.PC)
+				fmt.Printf("GR[1] = %04x\tSP = %04x\n", p.GR[1], uint16(p.GR[4]))
+				fmt.Printf("GR[2] = %04x\tFR = ..00\n", p.GR[2])
+				fmt.Printf("GR[3] = %04x\n", p.GR[3])
 			case p.FR < 0:
-				fmt.Printf("GR[0] = %4x\tPC = %4x\n", p.GR[0], p.PC)
-				fmt.Printf("GR[1] = %4x\tSP = %4x\n", p.GR[1], p.GR[4])
-				fmt.Printf("GR[2] = %4x\tFR =   10\n", p.GR[2])
-				fmt.Printf("GR[3] = %4x\n", p.GR[3])
+				fmt.Printf("GR[0] = %04x\tPC = %04x\n", p.GR[0], p.PC)
+				fmt.Printf("GR[1] = %04x\tSP = %04x\n", p.GR[1], uint16(p.GR[4]))
+				fmt.Printf("GR[2] = %04x\tFR = ..10\n", p.GR[2])
+				fmt.Printf("GR[3] = %04x\n", p.GR[3])
 			default:
-				fmt.Printf("GR[0] = %4x\tPC = %4x\n", p.GR[0], p.PC)
-				fmt.Printf("GR[1] = %4x\tSP = %4x\n", p.GR[1], p.GR[4])
-				fmt.Printf("GR[2] = %4x\tFR =   01\n", p.GR[2])
-				fmt.Printf("GR[3] = %4x\n", p.GR[3])
+				fmt.Printf("GR[0] = %04x\tPC = %04x\n", p.GR[0], p.PC)
+				fmt.Printf("GR[1] = %04x\tSP = %04x\n", p.GR[1], uint16(p.GR[4]))
+				fmt.Printf("GR[2] = %04x\tFR = ..01\n", p.GR[2])
+				fmt.Printf("GR[3] = %04x\n", p.GR[3])
 			}
 
 		case "iMem", "imem", "i":
@@ -320,7 +324,7 @@ func (p *Coment) DebugRun() {
 			}
 
 			for i := 0; i < x2 && i < len(p.Mem); i++ {
-				fmt.Printf("mem[%-4x] = %x\n", x1, p.Mem[x1])
+				fmt.Printf("mem[%04x] = %04x\n", x1, uint16(p.Mem[x1]))
 				x1++
 			}
 
@@ -381,7 +385,6 @@ func (p *Coment) DebugHelp() string {
 }
 
 func (p *Coment) InsString(pc uint16, n int) string {
-	println("InsString", pc, n)
 	var buf bytes.Buffer
 	for i := 0; i < n; i++ {
 		var (
@@ -392,27 +395,32 @@ func (p *Coment) InsString(pc uint16, n int) string {
 			syscallId = p.Mem[pc] % 0x100
 		)
 
-		println("InsString:", i, op, gr)
-
 		if op > RET {
-			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
+			fmt.Fprintf(&buf, "mem[%04x]: 未知\n", pc)
 			break
 		}
 		if gr < 0 || gr > 4 {
-			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
+			fmt.Fprintf(&buf, "mem[%04x]: 未知\n", pc)
 			break
 		}
 
+		fmt.Fprintf(&buf, "mem[%04x]: %s\t", pc, OpTab[op].Name)
 		switch {
 		case op == SYSCALL:
 			fmt.Fprintln(&buf, "syscall", syscallId)
 			pc += 1
+			continue
+
 		case op == HALT || op == RET:
 			fmt.Fprintln(&buf)
 			pc += 1
+			continue
+
 		case op == POP:
 			fmt.Fprintf(&buf, "GR%d\n", gr)
 			pc += 1
+			continue
+
 		case op < CPL:
 			fmt.Fprintf(&buf, "GR%d, %x", gr, adr)
 			if xr != 0 {
@@ -428,9 +436,9 @@ func (p *Coment) InsString(pc uint16, n int) string {
 			fmt.Fprintln(&buf)
 			pc += 2
 		}
+
 	}
 
-	println("a::", buf.String())
 	return buf.String()
 }
 

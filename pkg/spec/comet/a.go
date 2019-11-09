@@ -17,7 +17,7 @@ func init() {
 
 func main() {
 	bin, pc := loadBin("sum.comet")
-	fmt.Println(pc, bin)
+	fmt.Println(pc, len(bin), bin)
 	vm := comet.NewComent(nil, bin, pc)
 	vm.DebugRun()
 }
