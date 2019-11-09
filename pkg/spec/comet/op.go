@@ -6,40 +6,42 @@ package comet
 
 // CASL机器指令
 const (
-	HALT = 0X0 // 停机
-	LD   = 0X1 // 取数, GR = (E)
-	ST   = 0X2 // 存数, E = (GR)
-	LEA  = 0X3 // 取地址, GR = E
+	HALT = 0x00 // 停机
+	LD   = 0x01 // 取数, GR = (E)
+	ST   = 0x02 // 存数, E = (GR)
+	LEA  = 0x03 // 取地址, GR = E
 
-	ADD = 0X4 // 相加, GR = (GR)+(E)
-	SUB = 0X5 // 相减, GR = (GR)-(E)
-	MUL = 0X6 // 相乘, GR = (GR)*(E)
-	DIV = 0X7 // 相除, GR = (GR)/(E)
-	MOD = 0X8 // 取模, GR = (GR)%(E)
+	ADD = 0x04 // 相加, GR = (GR)+(E)
+	SUB = 0x05 // 相减, GR = (GR)-(E)
+	MUL = 0x06 // 相乘, GR = (GR)*(E)
+	DIV = 0x07 // 相除, GR = (GR)/(E)
+	MOD = 0x08 // 取模, GR = (GR)%(E)
 
-	AND = 0X9 // 与, GR = (GR)&(E)
-	OR  = 0XA // 或, GR = (GR)|(E)
-	EOR = 0XB // 异或, GR = (GR)^(E)
+	AND = 0x09 // 与, GR = (GR)&(E)
+	OR  = 0x0A // 或, GR = (GR)|(E)
+	EOR = 0x0B // 异或, GR = (GR)^(E)
 
-	CPA = 0XC // 算术比较, (GR)-(E), 有符号数, 设置FR
-	CPL = 0XD // 逻辑比较, (GR)-(E), 无符号数, 设置FR
+	CPA = 0x0C // 算术比较, (GR)-(E), 有符号数, 设置FR
+	CPL = 0x0D // 逻辑比较, (GR)-(E), 无符号数, 设置FR
 
-	SLA = 0XE  // 算术左移, 空出的的位置补0
-	SRA = 0XF  // 算术右移, 空出的的位置被置成第0位的值
-	SLL = 0X10 // 逻辑左移, 空出的的位置补0
-	SRL = 0X11 // 逻辑右移, 空出的的位置被置0
+	SLA = 0x0E // 算术左移, 空出的的位置补0
+	SRA = 0x0F // 算术右移, 空出的的位置被置成第0位的值
+	SLL = 0x10 // 逻辑左移, 空出的的位置补0
+	SRL = 0x11 // 逻辑右移, 空出的的位置被置0
 
-	JMP = 0X12 // 无条件跳转, PC = E
-	JPZ = 0X13 // 不小于跳转, PC = E
-	JMI = 0X14 // 小于跳转, PC = E
-	JNZ = 0X15 // 不等于0, PC = E
-	JZE = 0X16 // 等于0跳转, PC = E
+	JMP = 0x12 // 无条件跳转, PC = E
+	JPZ = 0x13 // 不小于跳转, PC = E
+	JMI = 0x14 // 小于跳转, PC = E
+	JNZ = 0x15 // 不等于0, PC = E
+	JZE = 0x16 // 等于0跳转, PC = E
 
-	PUSH = 0X17 // 进栈, SP = (SP)-1, (SP) = E
-	POP  = 0X18 // 出栈, GR = ((SP)), SP = (SP)+1
+	PUSH = 0x17 // 进栈, SP = (SP)-1, (SP) = E
+	POP  = 0x18 // 出栈, GR = ((SP)), SP = (SP)+1
 
-	CALL = 0X19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
-	RET  = 0X1A // 返回, SP = (SP)+1
+	CALL = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
+	RET  = 0x1A // 返回, SP = (SP)+1
+
+	SYSCALL = 0xFF // 系统调用, GR0~GR3可用于交换数据
 )
 
 // COMET机器指令长度和名字
@@ -65,4 +67,6 @@ var OpTab = []struct {
 
 	{PUSH, "PUSH", 2}, {POP, "POP", 1},
 	{CALL, "CALL", 2}, {RET, "RET", 1},
+
+	{SYSCALL, "SYSCALL", 1},
 }

@@ -22,8 +22,9 @@ type VM struct {
 	FR       uint16          // 标志寄存器
 	GR       [5]uint16       // 通用寄存器
 	Mem      [1 << 16]uint16 // 64KB内存
-	RW       io.ReadWriter   // 标准输入输出
+	RW       io.ReadWriter   // 标准输入输出(VM自身使用)
 	Shutdown bool            // 已经关机
+	Syscall  func(*VM)       // 系统调用(有部分必须要实现的保留编号)
 }
 
 type stdReadWriter struct{}
@@ -286,10 +287,13 @@ func (p *VM) DebugHelp() string {
 func (p *VM) InsString(pc, n int) string {
 	var buf bytes.Buffer
 	for i := 0; i < n; i++ {
-		var op = p.Mem[pc] / 0x100
-		var gr = p.Mem[pc] % 0x100 / 0x10
-		var xr = p.Mem[pc] % 0x10
-		var adr = p.Mem[pc+1]
+		var (
+			op        = p.Mem[pc] / 0x100
+			gr        = p.Mem[pc] % 0x100 / 0x10
+			xr        = p.Mem[pc] % 0x10
+			adr       = p.Mem[pc+1]
+			syscallId = p.Mem[pc] % 0x100
+		)
 
 		if op > RET {
 			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
@@ -301,6 +305,9 @@ func (p *VM) InsString(pc, n int) string {
 		}
 
 		switch {
+		case op == SYSCALL:
+			fmt.Fprintln(&buf, "syscall", syscallId)
+			pc += 1
 		case op == HALT || op == RET:
 			fmt.Fprintln(&buf)
 			pc += 1
