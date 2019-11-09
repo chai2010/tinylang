@@ -8,17 +8,17 @@
 #include "tiny.h"
 #include "util.h"
 
-TreeNode *stmt_sequence(void);
-TreeNode *statement(void);
-TreeNode *if_stmt(void);
-TreeNode *repeat_stmt(void);
-TreeNode *assign_stmt(void);
-TreeNode *read_stmt(void);
-TreeNode *write_stmt(void);
-TreeNode *exp(void);
-TreeNode *simple_exp(void);
-TreeNode *term(void);
-TreeNode *factor(void);
+extern TreeNode *stmt_sequence(void);
+extern TreeNode *statement(void);
+extern TreeNode *if_stmt(void);
+extern TreeNode *repeat_stmt(void);
+extern TreeNode *assign_stmt(void);
+extern TreeNode *read_stmt(void);
+extern TreeNode *write_stmt(void);
+extern TreeNode *tiny_exp(void);
+extern TreeNode *simple_exp(void);
+extern TreeNode *term(void);
+extern TreeNode *factor(void);
 
 /* 记号状态 */
 typedef enum {
@@ -254,7 +254,7 @@ if_stmt(void)
 {
 	TreeNode * t = newTreeNode(StmtK, IfK);
 	match(IF);
-	if(t != NULL) t->child[0] = exp();
+	if(t != NULL) t->child[0] = tiny_exp();
 	match(THEN);
 	if(t != NULL) t->child[1] = stmt_sequence();
 	if(token == ELSE) {
@@ -272,7 +272,7 @@ repeat_stmt(void)
 	match(REPEAT);
 	if(t != NULL) t->child[0] = stmt_sequence();
 	match(UNTIL);
-	if(t != NULL) t->child[1] = exp();
+	if(t != NULL) t->child[1] = tiny_exp();
 	return t;
 }
 
@@ -284,7 +284,7 @@ assign_stmt(void)
 		t->attr.name = str_new(tokStr);
 	match(ID);
 	match(ASSIGN);
-	if(t!=NULL) t->child[0] = exp();
+	if(t!=NULL) t->child[0] = tiny_exp();
 	return t;
 }
 
@@ -304,14 +304,14 @@ write_stmt(void)
 {
 	TreeNode * t = newTreeNode(StmtK, WriteK);
 	match(WRITE);
-	if(t!=NULL) t->child[0] = exp();
+	if(t!=NULL) t->child[0] = tiny_exp();
 	return t;
 }
 
 /* 表达式类型 */
 
 TreeNode *
-exp(void)
+tiny_exp(void)
 {
 	TreeNode * t = simple_exp();
 	if((token == LT) || (token == EQ)) {
@@ -380,7 +380,7 @@ factor(void)
 			break;
 		case LPAREN :
 			match(LPAREN);
-			t = exp();
+			t = tiny_exp();
 			match(RPAREN);
 			break;
 		default:

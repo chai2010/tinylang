@@ -59,19 +59,19 @@ init(int n, char *v[])
 	source = fopen(pgmName, "r");
 	if(source == NULL) {
 		fprintf(stderr, "无法打开文件 %s\n", pgmName);
-		fcloseall();
+		// fcloseall();
 		exit(1);
 	}
 	code = fopen(codName, "w");
 	if(code == NULL) {
 		fprintf(stderr, "无法建立文件 %s\n", codName);
-		fcloseall();
+		// fcloseall();
 		exit(1);
 	}
 	listing = fopen(lstName, "w");
 	if(listing == NULL) {
 		fprintf(stderr, "无法建立文件 %s\n", lstName);
-		fcloseall();
+		// fcloseall();
 		exit(1);
 	}
 	fprintf(listing, "\nTINY编译器: %s\n\n", pgmName);
@@ -80,22 +80,26 @@ init(int n, char *v[])
 	printf("编译中...\n\n");
 }
 
+static void freeTreeNode(TreeNode* p) {
+	free((void*)p);
+}
+
 /* 释放系统申请的资源 */
 
 void
 tiny_free(TreeNode *tree)
 {
-	traverse(tree, NULL, free);
+	traverse(tree, NULL, freeTreeNode);
 	lab_free(); str_free();
 	if(Error) printf("未知错误 :(\n");
 	else printf("分析结束 :)\n");
-	fcloseall();
+	// fcloseall();
 }
 
 /* 主函数 */
 
 int
-main(int argc, char *argv[])
+tinyMain(int argc, char *argv[])
 {
 	TreeNode *tree;		/* 语法树 */
 	

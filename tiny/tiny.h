@@ -68,4 +68,7 @@ extern FILE* code;
 extern int line;
 extern int Error;
 
+// 入口函数
+extern int tinyMain(int argc, char *argv[]);
+
 #endif
