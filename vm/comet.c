@@ -4,6 +4,10 @@
 
 #include "comet.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 /* 计算数组元素个数 */
 

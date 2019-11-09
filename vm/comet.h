@@ -5,9 +5,6 @@
 #ifndef COMET_H
 #define COMET_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 int cometMain(int argc, char *argv[]);
 
