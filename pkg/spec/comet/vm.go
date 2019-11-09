@@ -18,11 +18,12 @@ const (
 )
 
 type VM struct {
-	PC  int             // 指令计数器
-	FR  uint16          // 标志寄存器
-	GR  [5]uint16       // 通用寄存器
-	Mem [1 << 16]uint16 // 64KB内存
-	RW  io.ReadWriter   // 外部IO设备
+	PC       int             // 指令计数器
+	FR       uint16          // 标志寄存器
+	GR       [5]uint16       // 通用寄存器
+	Mem      [1 << 16]uint16 // 64KB内存
+	RW       io.ReadWriter   // 标准输入输出
+	Shutdown bool            // 已经关机
 }
 
 type stdReadWriter struct{}
@@ -45,14 +46,78 @@ func New(rw io.ReadWriter, prog []uint16, pc int) *VM {
 	return p
 }
 
-func (p *VM) Run() {}
+func (p *VM) Run() {
+	if p.Shutdown {
+		return
+	}
+	for !p.Shutdown {
+		p.StepRun()
+	}
+}
 
-func (p *VM) StepRun() {}
+func (p *VM) StepRun() {
+	if p.Shutdown {
+		return
+	}
+
+	var op = p.Mem[p.PC] / 0x100
+	var gr = p.Mem[p.PC] % 0x100 / 0x10
+	var xr = p.Mem[p.PC] % 0x10
+	var adr = p.Mem[p.PC+1]
+
+	if gr < 0 || gr > 4 {
+		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		p.Shutdown = true
+		return
+	}
+	if xr < 0 || xr > 4 {
+		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		p.Shutdown = true
+		return
+	}
+	if xr != 0 {
+		adr += p.GR[xr]
+	}
+
+	// 处理IO外设
+	p.io()
+
+	// 指令解码
+	switch op {
+	case HALT:
+	case LD:
+	case ST:
+	case LEA:
+	case ADD:
+	case SUB:
+	case MUL:
+	case DIV:
+	case MOD:
+	case AND:
+	case OR:
+	case EOR:
+	case SLA:
+	case SRA:
+	case SLL:
+	case SRL:
+	case CPA:
+	case CPL:
+	case JMP:
+	case JPZ:
+	case JMI:
+	case JNZ:
+	case JZE:
+	case PUSH:
+	case POP:
+	case CALL:
+	case RET:
+	default:
+	}
+}
 
 func (p *VM) DebugRun() {
-	var backup = *p
-
 	var (
+		backup  = *p
 		stepcnt int
 		pntflag bool
 		traflag bool
@@ -61,7 +126,7 @@ func (p *VM) DebugRun() {
 	fmt.Println("调试 （帮助输入 help）...")
 	fmt.Println()
 
-	for {
+	for !p.Shutdown {
 		fmt.Print("输入命令: ")
 
 		bf := bufio.NewReader(p.RW)
@@ -75,15 +140,14 @@ func (p *VM) DebugRun() {
 			fmt.Println(p.DebugHelp())
 		case "go", "g":
 			stepcnt = 0
-			for {
+			for !p.Shutdown {
 				stepcnt++
 				if traflag {
-					// writeIns(cmt.pc, 1);
+					fmt.Println(p.InsString(p.PC, 1))
 				}
 
-				if true /* && comet_step() */ {
-					break
-				}
+				// 单步执行(可能执行HALT关机指令)
+				p.StepRun()
 			}
 			if pntflag {
 				fmt.Printf("执行指令数目 = %d\n", stepcnt)
@@ -97,11 +161,13 @@ func (p *VM) DebugRun() {
 			}
 
 			var i int
-			for i = 0; i < stepcnt; i++ {
+			for i = 0; i < stepcnt && !p.Shutdown; i++ {
 				if traflag {
-					// writeIns(cmt.pc, 1);
+					fmt.Println(p.InsString(p.PC, 1))
 				}
-				//if(!comet_step()) break;
+
+				// 单步执行(可能执行HALT关机指令)
+				p.StepRun()
 			}
 			if pntflag {
 				fmt.Printf("执行指令数目 = %d\n", i)
@@ -146,7 +212,7 @@ func (p *VM) DebugRun() {
 				x2 = 1
 			}
 
-			// writeIns(x1, x2);
+			fmt.Println(p.InsString(x1, x2))
 
 		case "dMem", "dmem", "d":
 			if n < 2 {
@@ -215,4 +281,52 @@ func (p *VM) DebugHelp() string {
   c)lear          重置模拟器内容
   q)uit           终止模拟器
 `
+}
+
+func (p *VM) InsString(pc, n int) string {
+	var buf bytes.Buffer
+	for i := 0; i < n; i++ {
+		var op = p.Mem[pc] / 0x100
+		var gr = p.Mem[pc] % 0x100 / 0x10
+		var xr = p.Mem[pc] % 0x10
+		var adr = p.Mem[pc+1]
+
+		if op > RET {
+			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
+			break
+		}
+		if gr < 0 || gr > 4 {
+			fmt.Fprintf(&buf, "mem[%-4x]: 未知\n", pc)
+			break
+		}
+
+		switch {
+		case op == HALT || op == RET:
+			fmt.Fprintln(&buf)
+			pc += 1
+		case op == POP:
+			fmt.Fprintf(&buf, "GR%d\n", gr)
+			pc += 1
+		case op < CPL:
+			fmt.Fprintf(&buf, "GR%d, %x", gr, adr)
+			if xr != 0 {
+				fmt.Fprintf(&buf, ", GR%d", xr)
+			}
+			fmt.Println()
+			pc += 2
+		default:
+			fmt.Fprintf(&buf, "%x", adr)
+			if xr != 0 {
+				fmt.Fprintf(&buf, ", GR%d", xr)
+			}
+			fmt.Println()
+			pc += 2
+		}
+	}
+
+	return buf.String()
+}
+
+func (p *VM) io() {
+	// todo
 }
