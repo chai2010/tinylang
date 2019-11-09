@@ -32,8 +32,8 @@ const (
 	JMP = 0X12 // 无条件跳转, PC = E
 	JPZ = 0X13 // 不小于跳转, PC = E
 	JMI = 0X14 // 小于跳转, PC = E
-	JNE = 0X15 // 不等于跳转, PC = E
-	JZE = 0X16 // 等于跳转, PC = E
+	JNZ = 0X15 // 不等于0, PC = E
+	JZE = 0X16 // 等于0跳转, PC = E
 
 	PUSH = 0X17 // 进栈, SP = (SP)-1, (SP) = E
 	POP  = 0X18 // 出栈, GR = ((SP)), SP = (SP)+1
@@ -41,3 +41,28 @@ const (
 	CALL = 0X19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
 	RET  = 0X1A // 返回, SP = (SP)+1
 )
+
+// COMET机器指令长度和名字
+var OpTab = []struct {
+	Op   int
+	Name string
+	Len  int
+}{
+	{HALT, "HALT", 1},
+
+	{LD, "LD", 2}, {ST, "ST", 2}, {LEA, "LEA", 2},
+
+	{ADD, "ADD", 2}, {SUB, "SUB", 2},
+	{MUL, "MUL", 2}, {DIV, "DIV", 2}, {MOD, "MOD", 2},
+	{AND, "AND", 2}, {OR, "OR", 2}, {EOR, "EOR", 2},
+
+	{SLA, "SLA", 2}, {SRA, "SRA", 2}, {SLL, "SLL", 2}, {SRL, "SRL", 2},
+
+	{CPA, "CPA", 2}, {CPL, "CPL", 2},
+
+	{JMP, "JMP", 2},
+	{JPZ, "JPZ", 2}, {JMI, "JMI", 2}, {JNZ, "JNZ", 2}, {JZE, "JZE", 2},
+
+	{PUSH, "PUSH", 2}, {POP, "POP", 1},
+	{CALL, "CALL", 2}, {RET, "RET", 1},
+}

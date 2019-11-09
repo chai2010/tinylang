@@ -41,8 +41,8 @@ const (
 	JMP = 0X12 // 无条件跳转, PC = E
 	JPZ = 0X13 // 不小于跳转, PC = E
 	JMI = 0X14 // 小于跳转, PC = E
-	JNE = 0X15 // 不等于跳转, PC = E
-	JZE = 0X16 // 等于跳转, PC = E
+	JNZ = 0X15 // 不等于0, PC = E
+	JZE = 0X16 // 等于0跳转, PC = E
 
 	PUSH = 0X17 // 进栈, SP = (SP)-1, (SP) = E
 	POP  = 0X18 // 出栈, GR = ((SP)), SP = (SP)+1
