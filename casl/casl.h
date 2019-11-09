@@ -90,17 +90,20 @@ typedef enum {
 	ID, NUM, STRING, COMMA, ENDLINE
 } TokenType;
 
-off_t mem[MEMSIZE];	/* 64k 内存 */
+extern off_t mem[MEMSIZE];	/* 64k 内存 */
 
-char pgmName[32];	/* 汇编程序 */
-char codName[32];	/* 机器代码 */
+extern char pgmName[32];	/* 汇编程序 */
+extern char codName[32];	/* 机器代码 */
 
-FILE *source, *code;	/* 文件指针 */
+extern FILE *source, *code;	/* 文件指针 */
 
-int pc = pc_start;	/* 指令地址 */
-int line = 0;		/* 行计数器 */
+extern int pc;	/* 指令地址 */
+extern int line;		/* 行计数器 */
 
-int state = 0;		/* 状态标志 */
-int Error = 0;		/* 错误标志 */
+extern int state;		/* 状态标志 */
+extern int Error;		/* 错误标志 */
+
+
+extern int caslMain(int n, char *v[]);
 
 #endif

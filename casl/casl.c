@@ -5,6 +5,20 @@
 #include "casl.h"
 #include "label.h"
 
+
+off_t mem[MEMSIZE];	/* 64k 内存 */
+
+char pgmName[32];	/* 汇编程序 */
+char codName[32];	/* 机器代码 */
+
+FILE *source, *code;	/* 文件指针 */
+
+int pc = pc_start;	/* 指令地址 */
+int line = 0;		/* 行计数器 */
+
+int state = 0;		/* 状态标志 */
+int Error = 0;		/* 错误标志 */
+
 char buf[LINESIZE+2];	/* 行缓冲区	*/
 int  len;		/* 字符串长度	*/
 int  pos;		/* 行下标	*/
@@ -300,11 +314,12 @@ macro_read(void)
 		PUSH << 8, ac_comet,
 		LEA  << 8, 0,
 		ST   << 8, IO_ADDR,
-		LEA  << 8, 1 & IO_MAX | IO_DEC | IO_IN,
+		LEA  << 8, (1 & IO_MAX) | IO_DEC | IO_IN,
 		ST   << 8, IO_FLAG,
 		POP  << 8 };
 	const short ai = 5;
 	int i;
+
 	if(token == ID)
 		cmd[ai] = lab_get(tokStr, pc+ai);
 	else if(token == NUM)
@@ -324,7 +339,7 @@ macro_write(void)
 		PUSH << 8, ac_comet,
 		LEA  << 8, 0,
 		ST   << 8, IO_ADDR,
-		LEA  << 8, 1 & IO_MAX | IO_DEC | IO_OUT,
+		LEA  << 8, (1 & IO_MAX) | IO_DEC | IO_OUT,
 		ST   << 8, IO_FLAG,
 		POP  << 8 };
 	const short ai = 5;
@@ -494,7 +509,7 @@ casl_free(void)
 }
 
 int
-main(int n, char *v[])
+caslMain(int n, char *v[])
 {
 	init(n, v);
 	buildCode();
