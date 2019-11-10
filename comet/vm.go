@@ -20,7 +20,7 @@ const (
 	PC_MAX   = 0xFC00 // PC最大地址
 )
 
-type Coment struct {
+type Comet struct {
 	CPU
 	Stdin    *bufio.Reader  // 标准输入输出(VM自身使用)
 	Stdout   io.Writer      // 标准输入输出(VM自身使用)
@@ -44,12 +44,12 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 	return os.Stdout.Write(p)
 }
 
-func NewComent(rw io.ReadWriter, prog []uint16, pc int) *Coment {
+func NewComet(rw io.ReadWriter, prog []uint16, pc int) *Comet {
 	if rw == nil {
 		rw = new(stdReadWriter)
 	}
 
-	p := &Coment{
+	p := &Comet{
 		Stdin:  bufio.NewReader(rw),
 		Stdout: rw,
 	}
@@ -61,7 +61,7 @@ func NewComent(rw io.ReadWriter, prog []uint16, pc int) *Coment {
 	return p
 }
 
-func (p *Coment) Run() {
+func (p *Comet) Run() {
 	if p.Shutdown {
 		return
 	}
@@ -70,7 +70,7 @@ func (p *Coment) Run() {
 	}
 }
 
-func (p *Coment) StepRun() {
+func (p *Comet) StepRun() {
 	if p.Shutdown {
 		return
 	}
@@ -227,7 +227,7 @@ func (p *Coment) StepRun() {
 	}
 }
 
-func (p *Coment) DebugRun() {
+func (p *Comet) DebugRun() {
 	var (
 		backup  = *p
 		stepcnt int
@@ -387,7 +387,7 @@ func (p *Coment) DebugRun() {
 	}
 }
 
-func (p *Coment) DebugHelp() string {
+func (p *Comet) DebugHelp() string {
 	return `命令列表:
   h)elp           显示本命令列表
   g)o             运行程序直到停止
@@ -404,7 +404,7 @@ func (p *Coment) DebugHelp() string {
 `
 }
 
-func (p *Coment) InsString(pc uint16, n int) string {
+func (p *Comet) InsString(pc uint16, n int) string {
 	var buf bytes.Buffer
 	for i := 0; i < n; i++ {
 		var (
@@ -462,7 +462,7 @@ func (p *Coment) InsString(pc uint16, n int) string {
 	return buf.String()
 }
 
-func (p *Coment) io() {
+func (p *Comet) io() {
 	cnt := p.Mem[IO_FLAG] & IO_MAX
 	if cnt == 0 {
 		return

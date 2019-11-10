@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	bin, pc := loadBin(*flagFile)
-	vm := comet.NewComent(nil, bin, pc)
+	vm := comet.NewComet(nil, bin, pc)
 
 	if *flagDebug {
 		vm.DebugRun()
