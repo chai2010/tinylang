@@ -4,54 +4,78 @@
 
 package comet
 
-// CASL机器指令
+import "fmt"
+
+// COMET指令类型
+type OpType byte
+
+// COMET机器指令
 //
 // 新增的指令: MUL, DIV, MOD, HALT, SYSCALL
 const (
-	HALT = 0x00 // 停机
-	LD   = 0x01 // 取数, GR = (E)
-	ST   = 0x02 // 存数, E = (GR)
-	LEA  = 0x03 // 取地址, GR = E
+	HALT OpType = 0x00 // 停机
+	LD   OpType = 0x01 // 取数, GR = (E)
+	ST   OpType = 0x02 // 存数, E = (GR)
+	LEA  OpType = 0x03 // 取地址, GR = E
 
-	ADD = 0x04 // 相加, GR = (GR)+(E)
-	SUB = 0x05 // 相减, GR = (GR)-(E)
-	MUL = 0x06 // 相乘, GR = (GR)*(E)
-	DIV = 0x07 // 相除, GR = (GR)/(E)
-	MOD = 0x08 // 取模, GR = (GR)%(E)
+	ADD OpType = 0x04 // 相加, GR = (GR)+(E)
+	SUB OpType = 0x05 // 相减, GR = (GR)-(E)
+	MUL OpType = 0x06 // 相乘, GR = (GR)*(E)
+	DIV OpType = 0x07 // 相除, GR = (GR)/(E)
+	MOD OpType = 0x08 // 取模, GR = (GR)%(E)
 
-	AND = 0x09 // 与, GR = (GR)&(E)
-	OR  = 0x0A // 或, GR = (GR)|(E)
-	EOR = 0x0B // 异或, GR = (GR)^(E)
+	AND OpType = 0x09 // 与, GR = (GR)&(E)
+	OR  OpType = 0x0A // 或, GR = (GR)|(E)
+	EOR OpType = 0x0B // 异或, GR = (GR)^(E)
 
-	SLA = 0x0C // 算术左移, GR = GR<<(E), 空出的的位置补0
-	SRA = 0x0D // 算术右移, GR = GR>>(E), 空出的的位置被置成第0位的值
-	SLL = 0x0E // 逻辑左移, GR = GR<<(E), 空出的的位置补0
-	SRL = 0x0F // 逻辑右移, GR = GR>>(E), 空出的的位置被置0
+	SLA OpType = 0x0C // 算术左移, GR = GR<<(E), 空出的的位置补0
+	SRA OpType = 0x0D // 算术右移, GR = GR>>(E), 空出的的位置被置成第0位的值
+	SLL OpType = 0x0E // 逻辑左移, GR = GR<<(E), 空出的的位置补0
+	SRL OpType = 0x0F // 逻辑右移, GR = GR>>(E), 空出的的位置被置0
 
-	CPA = 0x10 // 算术比较, (GR)-(E), 有符号数, 设置FR
-	CPL = 0x11 // 逻辑比较, (GR)-(E), 无符号数, 设置FR
+	CPA OpType = 0x10 // 算术比较, (GR)-(E), 有符号数, 设置FR
+	CPL OpType = 0x11 // 逻辑比较, (GR)-(E), 无符号数, 设置FR
 
-	JMP = 0x12 // 无条件跳转, PC = E
-	JPZ = 0x13 // FR不小于跳转, PC = E
-	JMI = 0x14 // FR小于跳转, PC = E
-	JNZ = 0x15 // FR不等于0, PC = E
-	JZE = 0x16 // FR等于0跳转, PC = E
+	JMP OpType = 0x12 // 无条件跳转, PC = E
+	JPZ OpType = 0x13 // FR不小于跳转, PC = E
+	JMI OpType = 0x14 // FR小于跳转, PC = E
+	JNZ OpType = 0x15 // FR不等于0, PC = E
+	JZE OpType = 0x16 // FR等于0跳转, PC = E
 
-	PUSH = 0x17 // 进栈, SP = (SP)-1, (SP) = E
-	POP  = 0x18 // 出栈, GR = ((SP)), SP = (SP)+1
+	PUSH OpType = 0x17 // 进栈, SP = (SP)-1, (SP) = E
+	POP  OpType = 0x18 // 出栈, GR = ((SP)), SP = (SP)+1
 
-	CALL = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
-	RET  = 0x1A // 返回, SP = (SP)+1
+	CALL OpType = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
+	RET  OpType = 0x1A // 返回, SP = (SP)+1
 
-	READ  = 0x20 // 扩展指令, 读一个字符到 GR, 每个字符为uint16
-	WRITE = 0x21 // 扩展指令, 将 GR 对应的 Unicode 码点值 写到标准输出, 每个字符为uint16
-
-	SYSCALL = 0xFF // 系统调用, GR0~GR3可用于交换数据
+	SYSCALL OpType = 0xFF // 系统调用, GR0~GR3可用于交换数据
 )
+
+func (op OpType) Valid() bool {
+	return int(op) < len(OpTab) && OpTab[op].Name != ""
+}
+
+func (op OpType) Size() int {
+	if int(op) > len(OpTab) {
+		return 0
+	}
+	return OpTab[op].Len
+}
+
+func (op OpType) String() string {
+	if int(op) > len(OpTab) {
+		return fmt.Sprintf("OpType(%d)", int(op))
+	}
+	if OpTab[op].Name == "" {
+		return fmt.Sprintf("OpType(%d)", int(op))
+	}
+
+	return OpTab[op].Name
+}
 
 // COMET机器指令长度和名字
 var OpTab = [...]struct {
-	Op   int
+	Op   OpType
 	Name string
 	Len  int
 }{
@@ -89,9 +113,6 @@ var OpTab = [...]struct {
 	POP:  {POP, "POP", 1},
 	CALL: {CALL, "CALL", 2},
 	RET:  {RET, "RET", 1},
-
-	READ:  {READ, "READ", 1},
-	WRITE: {WRITE, "WRITE", 1},
 
 	SYSCALL: {SYSCALL, "SYSCALL", 2},
 }

@@ -75,7 +75,7 @@ func (p *Comet) StepRun() {
 		return
 	}
 
-	var op = p.Mem[p.PC] / 0x100
+	var op = OpType(p.Mem[p.PC] / 0x100)
 	var gr = (p.Mem[p.PC] % 0x100) / 0x10
 	var xr = p.Mem[p.PC] % 0x10
 	var adr = p.Mem[p.PC+1]
@@ -206,14 +206,6 @@ func (p *Comet) StepRun() {
 		p.PC += 1
 		p.PC = p.Mem[p.GR[4]]
 		p.GR[4]++
-
-	case READ:
-		p.PC += 1
-		c, _, _ := p.Stdin.ReadRune()
-		p.GR[gr] = uint16(c)
-	case WRITE:
-		p.PC += 1
-		fmt.Fprint(p.Stdout, rune(p.GR[gr]))
 
 	case SYSCALL:
 		if p.Syscall != nil {
@@ -408,7 +400,7 @@ func (p *Comet) InsString(pc uint16, n int) string {
 	var buf bytes.Buffer
 	for i := 0; i < n; i++ {
 		var (
-			op        = p.Mem[pc] / 0x100
+			op        = OpType(p.Mem[pc] / 0x100)
 			gr        = p.Mem[pc] % 0x100 / 0x10
 			xr        = p.Mem[pc] % 0x10
 			adr       = uint16(p.Mem[pc+1])
