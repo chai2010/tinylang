@@ -44,19 +44,15 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 	return os.Stdout.Write(p)
 }
 
-func NewComet(rw io.ReadWriter, prog []uint16, pc int) *Comet {
-	if rw == nil {
-		rw = new(stdReadWriter)
-	}
-
-	p := &Comet{
-		Stdin:  bufio.NewReader(rw),
-		Stdout: rw,
-	}
+func NewComet(prog []uint16, pc int) *Comet {
+	p := new(Comet)
 	copy(p.Mem[:], prog)
 
 	p.PC = uint16(pc)
 	p.GR[4] = SP_START
+
+	p.Stdin = bufio.NewReader(os.Stdin)
+	p.Stdout = os.Stdout
 
 	return p
 }
