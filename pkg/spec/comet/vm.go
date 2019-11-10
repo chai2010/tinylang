@@ -223,7 +223,7 @@ func (p *Coment) DebugRun() {
 	fmt.Println("调试 （帮助输入 help）...")
 	fmt.Println()
 
-	for !p.Shutdown {
+	for {
 		fmt.Print("输入命令: ")
 
 		bf := bufio.NewReader(p.RW)
@@ -236,6 +236,10 @@ func (p *Coment) DebugRun() {
 		case "help", "h":
 			fmt.Println(p.DebugHelp())
 		case "go", "g":
+			if p.Shutdown {
+				fmt.Println("已经停机, 输入 `clear` 指令重置机器")
+				continue
+			}
 			stepcnt = 0
 			for !p.Shutdown {
 				stepcnt++
@@ -251,6 +255,11 @@ func (p *Coment) DebugRun() {
 			}
 
 		case "step", "s":
+			if p.Shutdown {
+				fmt.Println("已经停机, 输入 `clear` 指令重置机器")
+				continue
+			}
+
 			if n >= 2 {
 				stepcnt = x1
 			} else {
