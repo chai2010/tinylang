@@ -44,7 +44,7 @@ Loop:
 			}
 			tokens = append(tokens, tok)
 
-		case r >= '0' && r <= '9': // 数字
+		case r == '+' || r == '-' || (r >= '0' && r <= '9'): // 数字
 			tok, err := l.lexNumber()
 			if err != nil {
 				return nil, err
@@ -58,7 +58,7 @@ Loop:
 			}
 			tokens = append(tokens, tok)
 
-		case r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z'): // 标识符 或 关键字
+		case l.isAlphaNumer(r): // 标识符 或 关键字
 			tok, err := l.lexIdent()
 			if err != nil {
 				return nil, err
@@ -84,25 +84,74 @@ Loop:
 
 // 跳过空白
 func (l *lexer) skipSpace() {
-	//
+	for {
+		switch r := l.r.peek(); true {
+		case l.isEneOfLine(r) || l.isEOF(r):
+			l.r.next()
+		case !l.isSpace(r):
+			l.r.next()
+		default:
+			return
+		}
+	}
 }
 
 // 解析注释
-func (l *lexer) lexComment() (Item, error) {
-	panic("todo")
+func (l *lexer) lexComment() (tok Item, err error) {
+	tok.Typ = COMMENT
+	tok.Pos = l.r.pos
+	for {
+		switch r := l.r.peek(); true {
+		case l.isEneOfLine(r) || l.isEOF(r):
+			tok.Val = l.r.txt[tok.Pos:l.r.pos]
+			tok.End = l.r.pos
+			return
+		default:
+			l.r.next()
+		}
+	}
 }
 
 // 解析数字
 func (l *lexer) lexNumber() (Item, error) {
+	// 1. 跳过符号
+	// 2. 支持十六进制
 	panic("todo")
 }
 
 // 解析字符串
 func (l *lexer) lexString() (Item, error) {
+	// 1. 支持转义字符
 	panic("todo")
 }
 
 // 解析标识符
 func (l *lexer) lexIdent() (Item, error) {
 	panic("todo")
+}
+
+// 空白字符(不含换行符号)
+func (l *lexer) isSpace(r rune) bool {
+	return r == ' ' || r == '\t'
+}
+
+// 行尾符号
+func (l *lexer) isEneOfLine(r rune) bool {
+	return r == '\r' || r == '\n'
+}
+
+// 文件结束
+func (l *lexer) isEOF(r rune) bool {
+	return r == eof
+}
+
+// 是否为字面或数字(包含下划线, 不支持中文字符)
+func (l *lexer) isAlphaNumer(r rune) bool {
+	if r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' || r <= 'Z') {
+		return true
+	}
+	if r >= '0' && r <= '9' {
+		return true
+	}
+	return false
 }
