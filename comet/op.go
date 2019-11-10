@@ -48,7 +48,7 @@ const (
 	CALL OpType = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
 	RET  OpType = 0x1A // 返回, SP = (SP)+1
 
-	SYSCALL OpType = 0xFF // 系统调用, GR0是调用编号和返回值, GR1~GR3可用于交换数据
+	SYSCALL OpType = 0xFF // 系统调用, 低8bit是调用号, GR0~GR3可用于交换数据
 )
 
 func (op OpType) Valid() bool {

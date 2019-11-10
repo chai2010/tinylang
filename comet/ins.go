@@ -15,7 +15,7 @@ type Instruction struct {
 	GR        uint16 // 通用寄存器
 	XR        uint16 // 寻址寄存器
 	ADR       uint16 // 地址
-	SyscallId uint16 // 系统调用号
+	SyscallId uint8  // 系统调用号
 }
 
 // 解码指令
@@ -25,7 +25,7 @@ func (p *CPU) ParseInstruction(pc uint16) (ins *Instruction, ok bool) {
 		GR:        p.Mem[pc] % 0x100 / 0x10,
 		XR:        p.Mem[pc] % 0x10,
 		ADR:       uint16(p.Mem[pc+1]),
-		SyscallId: p.GR[0],
+		SyscallId: uint8(p.Mem[pc] % 0x100),
 	}
 
 	if !ins.Valid() {

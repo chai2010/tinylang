@@ -22,10 +22,10 @@ const (
 
 type Comet struct {
 	CPU
-	Stdin    *bufio.Reader                      // 标准输入输出(VM自身使用)
-	Stdout   io.Writer                          // 标准输入输出(VM自身使用)
-	Shutdown bool                               // 已经关机
-	Syscall  func(ctx *Comet, id uint16) uint16 // 系统调用(GR0是调用编号和返回值)
+	Stdin    *bufio.Reader                     // 标准输入输出(VM自身使用)
+	Stdout   io.Writer                         // 标准输入输出(VM自身使用)
+	Shutdown bool                              // 已经关机
+	Syscall  func(ctx *Comet, id uint8) uint16 // 系统调用(GR0是返回值)
 }
 
 type CPU struct {
@@ -205,7 +205,8 @@ func (p *Comet) StepRun() {
 
 	case SYSCALL:
 		if p.Syscall != nil {
-			p.GR[0] = p.Syscall(p, p.GR[0])
+			var syscalId = uint8(p.Mem[p.PC] % 0x100)
+			p.GR[0] = p.Syscall(p, syscalId)
 		}
 
 	default:
