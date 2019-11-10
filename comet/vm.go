@@ -22,10 +22,10 @@ const (
 
 type Comet struct {
 	CPU
-	Stdin    *bufio.Reader  // 标准输入输出(VM自身使用)
-	Stdout   io.Writer      // 标准输入输出(VM自身使用)
-	Shutdown bool           // 已经关机
-	Syscall  func(id uint8) // 系统调用(有部分必须要实现的保留编号)
+	Stdin    *bufio.Reader                      // 标准输入输出(VM自身使用)
+	Stdout   io.Writer                          // 标准输入输出(VM自身使用)
+	Shutdown bool                               // 已经关机
+	Syscall  func(ctx *Comet, id uint16) uint16 // 系统调用(GR0是调用编号和返回值)
 }
 
 type CPU struct {
@@ -209,8 +209,7 @@ func (p *Comet) StepRun() {
 
 	case SYSCALL:
 		if p.Syscall != nil {
-			id := p.Mem[p.PC] % 0x100
-			p.Syscall(uint8(id))
+			p.GR[0] = p.Syscall(p, p.GR[0])
 		}
 
 	default:
@@ -234,6 +233,15 @@ func (p *Comet) DebugRun() {
 		fmt.Print("输入命令: ")
 		line, _, _ := p.Stdin.ReadLine()
 
+		// 删除空白字符
+		line = bytes.TrimSpace(line)
+
+		// 跳过空白行
+		if string(line) == "" {
+			fmt.Fprintln(p.Stdout)
+			continue
+		}
+
 		var cmd, x1, x2 = "", 0, 0
 		n, _ := fmt.Fscanf(bytes.NewBuffer(line), "%s%x%x", &cmd, &x1, &x2)
 
@@ -249,7 +257,7 @@ func (p *Comet) DebugRun() {
 			for !p.Shutdown {
 				stepcnt++
 				if traflag {
-					fmt.Print(p.InsString(p.PC, 1))
+					fmt.Print(p.ShowInstruction(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -274,7 +282,7 @@ func (p *Comet) DebugRun() {
 			var i int
 			for i = 0; i < stepcnt && !p.Shutdown; i++ {
 				if traflag {
-					fmt.Print(p.InsString(p.PC, 1))
+					fmt.Print(p.ShowInstruction(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -324,7 +332,7 @@ func (p *Comet) DebugRun() {
 				x2 = 1
 			}
 
-			fmt.Print(p.InsString(x1, x2))
+			fmt.Print(p.ShowInstruction(x1, x2))
 
 		case "dMem", "dmem", "d":
 			x1 := uint16(x1)
@@ -396,59 +404,19 @@ func (p *Comet) DebugHelp() string {
 `
 }
 
-func (p *Comet) InsString(pc uint16, n int) string {
+// 格式化pc开始的n个指令
+func (p *Comet) ShowInstruction(pc uint16, n int) string {
 	var buf bytes.Buffer
+
 	for i := 0; i < n; i++ {
-		var (
-			op        = OpType(p.Mem[pc] / 0x100)
-			gr        = p.Mem[pc] % 0x100 / 0x10
-			xr        = p.Mem[pc] % 0x10
-			adr       = uint16(p.Mem[pc+1])
-			syscallId = p.Mem[pc] % 0x100
-		)
-
-		if op > RET {
-			fmt.Fprintf(&buf, "mem[%04x]: 未知\n", pc)
-			break
-		}
-		if gr < 0 || gr > 4 {
+		ins, ok := p.ParseInstruction(pc)
+		if !ok {
 			fmt.Fprintf(&buf, "mem[%04x]: 未知\n", pc)
 			break
 		}
 
-		fmt.Fprintf(&buf, "mem[%04x]: %s\t", pc, OpTab[op].Name)
-		switch {
-		case op == SYSCALL:
-			fmt.Fprintln(&buf, "syscall", syscallId)
-			pc += 1
-			continue
-
-		case op == HALT || op == RET:
-			fmt.Fprintln(&buf)
-			pc += 1
-			continue
-
-		case op == POP:
-			fmt.Fprintf(&buf, "GR%d\n", gr)
-			pc += 1
-			continue
-
-		case op < CPL:
-			fmt.Fprintf(&buf, "GR%d, %x", gr, adr)
-			if xr != 0 {
-				fmt.Fprintf(&buf, ", GR%d", xr)
-			}
-			fmt.Fprintln(&buf)
-			pc += 2
-		default:
-			fmt.Fprintf(&buf, "%x", adr)
-			if xr != 0 {
-				fmt.Fprintf(&buf, ", GR%d", xr)
-			}
-			fmt.Fprintln(&buf)
-			pc += 2
-		}
-
+		fmt.Fprintf(&buf, "mem[%04x]: %v\n", pc, ins)
+		pc += ins.Op.Size()
 	}
 
 	return buf.String()

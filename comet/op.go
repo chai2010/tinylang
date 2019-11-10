@@ -48,14 +48,21 @@ const (
 	CALL OpType = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
 	RET  OpType = 0x1A // 返回, SP = (SP)+1
 
-	SYSCALL OpType = 0xFF // 系统调用, GR0~GR3可用于交换数据
+	SYSCALL OpType = 0xFF // 系统调用, GR0是调用编号和返回值, GR1~GR3可用于交换数据
 )
 
 func (op OpType) Valid() bool {
 	return int(op) < len(OpTab) && OpTab[op].Name != ""
 }
 
-func (op OpType) Size() int {
+func (op OpType) UseGR() bool {
+	if int(op) < len(OpTab) {
+		return OpTab[op].UseGR
+	}
+	return false
+}
+
+func (op OpType) Size() uint16 {
 	if int(op) > len(OpTab) {
 		return 0
 	}
@@ -75,44 +82,45 @@ func (op OpType) String() string {
 
 // COMET机器指令长度和名字
 var OpTab = [...]struct {
-	Op   OpType
-	Name string
-	Len  int
+	Op    OpType
+	Name  string
+	Len   uint16
+	UseGR bool
 }{
-	HALT: {HALT, "HALT", 1},
+	HALT: {HALT, "HALT", 1, false},
 
-	LD:  {LD, "LD", 2},
-	ST:  {ST, "ST", 2},
-	LEA: {LEA, "LEA", 2},
+	LD:  {LD, "LD", 2, true},
+	ST:  {ST, "ST", 2, true},
+	LEA: {LEA, "LEA", 2, true},
 
-	ADD: {ADD, "ADD", 2},
-	SUB: {SUB, "SUB", 2},
-	MUL: {MUL, "MUL", 2},
-	DIV: {DIV, "DIV", 2},
-	MOD: {MOD, "MOD", 2},
+	ADD: {ADD, "ADD", 2, true},
+	SUB: {SUB, "SUB", 2, true},
+	MUL: {MUL, "MUL", 2, true},
+	DIV: {DIV, "DIV", 2, true},
+	MOD: {MOD, "MOD", 2, true},
 
-	AND: {AND, "AND", 2},
-	OR:  {OR, "OR", 2},
-	EOR: {EOR, "EOR", 2},
+	AND: {AND, "AND", 2, true},
+	OR:  {OR, "OR", 2, true},
+	EOR: {EOR, "EOR", 2, true},
 
-	SLA: {SLA, "SLA", 2},
-	SRA: {SRA, "SRA", 2},
-	SLL: {SLL, "SLL", 2},
-	SRL: {SRL, "SRL", 2},
+	SLA: {SLA, "SLA", 2, true},
+	SRA: {SRA, "SRA", 2, true},
+	SLL: {SLL, "SLL", 2, true},
+	SRL: {SRL, "SRL", 2, true},
 
-	CPA: {CPA, "CPA", 2},
-	CPL: {CPL, "CPL", 2},
+	CPA: {CPA, "CPA", 2, true},
+	CPL: {CPL, "CPL", 2, true},
 
-	JMP: {JMP, "JMP", 2},
-	JPZ: {JPZ, "JPZ", 2},
-	JMI: {JMI, "JMI", 2},
-	JNZ: {JNZ, "JNZ", 2},
-	JZE: {JZE, "JZE", 2},
+	JMP: {JMP, "JMP", 2, false},
+	JPZ: {JPZ, "JPZ", 2, false},
+	JMI: {JMI, "JMI", 2, false},
+	JNZ: {JNZ, "JNZ", 2, false},
+	JZE: {JZE, "JZE", 2, false},
 
-	PUSH: {PUSH, "PUSH", 2},
-	POP:  {POP, "POP", 1},
-	CALL: {CALL, "CALL", 2},
-	RET:  {RET, "RET", 1},
+	PUSH: {PUSH, "PUSH", 2, false},
+	POP:  {POP, "POP", 1, false},
+	CALL: {CALL, "CALL", 2, false},
+	RET:  {RET, "RET", 1, false},
 
-	SYSCALL: {SYSCALL, "SYSCALL", 2},
+	SYSCALL: {SYSCALL, "SYSCALL", 1, false},
 }

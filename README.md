@@ -4,7 +4,7 @@ Tiny语言是[《编译原理及实践》](https://book.douban.com/subject/10880
 
 实现原理：
 
-- [COMET虚拟计算机说明](./pkg/spec/comet/README.md)
+- [COMET虚拟计算机说明](./comet/README.md)
 - [CASL汇编器的设计与实现.pdf](./docs/casl-assembler.pdf)
 - [COMET虚拟机的设计与实现.pdf](./docs/comet-vm.pdf)
 
