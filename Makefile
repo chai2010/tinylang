@@ -1,7 +1,7 @@
 all:
 	go run ./tiny sum.tiny
 	go run ./casl sum.casl
-	go run ./vm sum
+	go run . -f=sum.comet
 
 .PHONY: tiny
 tiny:
@@ -13,6 +13,6 @@ casl:
 
 .PHONY: vm
 vm:
-	go run ./vm -debug sum
+	go run . -d sum.coment
 
 clean:

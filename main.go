@@ -1,5 +1,8 @@
-// +build ignore
+// Copyright 2019 <chaishushan{AT}gmail.com>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
+// Coment虚拟机
 package main
 
 import (
@@ -8,7 +11,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/chai2010/tinylang/pkg/spec/comet"
+	"github.com/chai2010/tinylang/comet"
 )
 
 var (
