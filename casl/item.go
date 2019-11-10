@@ -10,6 +10,7 @@ import "fmt"
 type Item struct {
 	Typ Token  // 记号类型
 	Val string // 字符串值
+	Num int    // 数字值
 	Pos int    // 开始位置
 	End int    // 结束位置
 }

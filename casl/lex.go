@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // 解析全部记号
@@ -51,12 +52,15 @@ Loop:
 			}
 			tokens = append(tokens, tok)
 
-		case r == '\'': // 字符串
+		case r == '"': // 字符串
 			tok, err := l.lexString()
 			if err != nil {
 				return nil, err
 			}
 			tokens = append(tokens, tok)
+
+		case r == '\'': // 不支持原始的字符串
+			return nil, fmt.Errorf("不支持单引号包含的字符串: %d", l.r.pos)
 
 		case l.isAlphaNumer(r): // 标识符 或 关键字
 			tok, err := l.lexIdent()
@@ -88,7 +92,7 @@ func (l *lexer) skipSpace() {
 		switch r := l.r.peek(); true {
 		case l.isEneOfLine(r) || l.isEOF(r):
 			l.r.next()
-		case !l.isSpace(r):
+		case l.isSpace(r):
 			l.r.next()
 		default:
 			return
@@ -112,22 +116,94 @@ func (l *lexer) lexComment() (tok Item, err error) {
 	}
 }
 
-// 解析数字
-func (l *lexer) lexNumber() (Item, error) {
-	// 1. 跳过符号
-	// 2. 支持十六进制
-	panic("todo")
+// 解析数字(10,+10,-10)
+// 不支持十六进制
+// 符号位和数字之间不能有空格
+func (l *lexer) lexNumber() (tok Item, err error) {
+	tok.Typ = NUM
+	tok.Pos = l.r.pos
+
+Loop:
+	for {
+		switch r := l.r.peek(); true {
+		case r == '+' || r == '-':
+			l.r.next()
+		case r >= '0' && r <= '9':
+			l.r.next()
+		default:
+			tok.Val = l.r.txt[tok.Pos:l.r.pos]
+			tok.End = l.r.pos
+			break Loop
+		}
+	}
+
+	// 验证数字是否有效
+	if tok.Num, err = strconv.Atoi(tok.Val); err != nil {
+		err = fmt.Errorf("无效的数字: %q at %d", tok.Val, tok.Pos)
+		return
+	}
+
+	// OK
+	return
 }
 
 // 解析字符串
-func (l *lexer) lexString() (Item, error) {
-	// 1. 支持转义字符
-	panic("todo")
+func (l *lexer) lexString() (tok Item, err error) {
+	tok.Typ = STRING
+	tok.Pos = l.r.pos
+
+	// 跳过`"`
+	l.r.next()
+
+	// 解析字符串
+Loop:
+	for {
+		switch r := l.r.peek(); true {
+		case l.isEneOfLine(r) || l.isEOF(r):
+			err = fmt.Errorf("无效的字符串: %q at %d", tok.Val, tok.Pos)
+			return
+		case r == '\\': // 转义字符
+			l.r.next() // 跳过一个字符, 主要是避免"\""导致提前结束
+		case r == '"': // 结束
+			tok.Val = l.r.txt[tok.Pos:l.r.pos]
+			tok.End = l.r.pos
+			break Loop
+		}
+	}
+
+	// 验证字符串是否有效
+	if tok.Val, err = strconv.Unquote(tok.Val); err != nil {
+		err = fmt.Errorf("无效的字符串: %q at %d", tok.Val, tok.Pos)
+		return
+	}
+
+	// OK
+	return
 }
 
 // 解析标识符
-func (l *lexer) lexIdent() (Item, error) {
-	panic("todo")
+func (l *lexer) lexIdent() (tok Item, err error) {
+	tok.Typ = ID
+	tok.Pos = l.r.pos
+
+	// 解析标识符
+Loop:
+	for {
+		switch r := l.r.peek(); true {
+		case l.isAlphaNumer(r):
+			l.r.next()
+		default:
+			tok.Val = l.r.txt[tok.Pos:l.r.pos]
+			tok.End = l.r.pos
+			break Loop
+		}
+	}
+
+	// 是否为关键字
+	tok.Typ = Lookup(tok.Val)
+
+	// OK
+	return
 }
 
 // 空白字符(不含换行符号)

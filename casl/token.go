@@ -19,7 +19,7 @@ const (
 	// 普通记号
 	ID     // 标识符, main
 	NUM    // 数字, 12345
-	STRING // 字符串, 'abc'
+	STRING // 字符串, "abc", 不支持原始的 'abc' 格式字符串
 	COMMA  // 逗号
 
 	keyword_beg
