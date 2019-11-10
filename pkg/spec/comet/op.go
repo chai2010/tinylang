@@ -21,13 +21,13 @@ const (
 	OR  = 0x0A // 或, GR = (GR)|(E)
 	EOR = 0x0B // 异或, GR = (GR)^(E)
 
-	CPA = 0x0C // 算术比较, (GR)-(E), 有符号数, 设置FR
-	CPL = 0x0D // 逻辑比较, (GR)-(E), 无符号数, 设置FR
+	SLA = 0x0C // 算术左移, GR = GR<<(E), 空出的的位置补0
+	SRA = 0x0D // 算术右移, GR = GR>>(E), 空出的的位置被置成第0位的值
+	SLL = 0x0E // 逻辑左移, GR = GR<<(E), 空出的的位置补0
+	SRL = 0x0F // 逻辑右移, GR = GR>>(E), 空出的的位置被置0
 
-	SLA = 0x0E // 算术左移, GR = GR<<(E), 空出的的位置补0
-	SRA = 0x0F // 算术右移, GR = GR>>(E), 空出的的位置被置成第0位的值
-	SLL = 0x10 // 逻辑左移, GR = GR<<(E), 空出的的位置补0
-	SRL = 0x11 // 逻辑右移, GR = GR>>(E), 空出的的位置被置0
+	CPA = 0x10 // 算术比较, (GR)-(E), 有符号数, 设置FR
+	CPL = 0x11 // 逻辑比较, (GR)-(E), 无符号数, 设置FR
 
 	JMP = 0x12 // 无条件跳转, PC = E
 	JPZ = 0x13 // FR不小于跳转, PC = E
@@ -66,13 +66,13 @@ var OpTab = [...]struct {
 	OR:  {OR, "OR", 2},
 	EOR: {EOR, "EOR", 2},
 
-	CPA: {CPA, "CPA", 2},
-	CPL: {CPL, "CPL", 2},
-
 	SLA: {SLA, "SLA", 2},
 	SRA: {SRA, "SRA", 2},
 	SLL: {SLL, "SLL", 2},
 	SRL: {SRL, "SRL", 2},
+
+	CPA: {CPA, "CPA", 2},
+	CPL: {CPL, "CPL", 2},
 
 	JMP: {JMP, "JMP", 2},
 	JPZ: {JPZ, "JPZ", 2},

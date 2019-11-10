@@ -5,7 +5,6 @@ package main
 import (
 	"encoding/binary"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -25,9 +24,8 @@ func main() {
 	flag.Parse()
 
 	bin, pc := loadBin(*flagFile)
-	fmt.Printf("PC: %d; BIN_LEN: %d\n", pc, len(bin))
-
 	vm := comet.NewComent(nil, bin, pc)
+
 	if *flagDebug {
 		vm.DebugRun()
 	} else {

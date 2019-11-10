@@ -240,7 +240,7 @@ func (p *Coment) DebugRun() {
 			for !p.Shutdown {
 				stepcnt++
 				if traflag {
-					fmt.Println(p.InsString(p.PC, 1))
+					fmt.Print(p.InsString(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -260,7 +260,7 @@ func (p *Coment) DebugRun() {
 			var i int
 			for i = 0; i < stepcnt && !p.Shutdown; i++ {
 				if traflag {
-					fmt.Println(p.InsString(p.PC, 1))
+					fmt.Print(p.InsString(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -310,7 +310,7 @@ func (p *Coment) DebugRun() {
 				x2 = 1
 			}
 
-			fmt.Println(p.InsString(x1, x2))
+			fmt.Print(p.InsString(x1, x2))
 
 		case "dMem", "dmem", "d":
 			x1 := uint16(x1)

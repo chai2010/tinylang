@@ -161,11 +161,19 @@ comet_io(void)
 		cmt.mem[IO_FLAG] |= IO_ERROR;
 		return;
 	}
+
+	printf("io: %d, %s, %s\n", count, fmt, fio==IO_OUT? "out": "in");
+
 	for(i = 0; i < count; ++i) {
-		if(fio == IO_IN)
-			scanf(fmt, &cmt.mem[addr++]);
-		else if(fio == IO_OUT)
+		if(fio == IO_IN) {
+			short x = 0;
+			scanf(fmt, &x);
+			printf("io: read x: %d\n", x);
+
+			cmt.mem[addr++] = x;
+		} else if(fio == IO_OUT) {
 			printf(fmt, cmt.mem[addr++]);
+		}
 	}
 	cmt.mem[IO_FLAG] &= (!IO_MAX);
 }
