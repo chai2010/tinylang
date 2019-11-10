@@ -257,7 +257,7 @@ func (p *Comet) DebugRun() {
 			for !p.Shutdown {
 				stepcnt++
 				if traflag {
-					fmt.Print(p.ShowInstruction(p.PC, 1))
+					fmt.Print(p.FormatInstruction(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -282,7 +282,7 @@ func (p *Comet) DebugRun() {
 			var i int
 			for i = 0; i < stepcnt && !p.Shutdown; i++ {
 				if traflag {
-					fmt.Print(p.ShowInstruction(p.PC, 1))
+					fmt.Print(p.FormatInstruction(p.PC, 1))
 				}
 
 				// 单步执行(可能执行HALT关机指令)
@@ -332,7 +332,7 @@ func (p *Comet) DebugRun() {
 				x2 = 1
 			}
 
-			fmt.Print(p.ShowInstruction(x1, x2))
+			fmt.Print(p.FormatInstruction(x1, x2))
 
 		case "dMem", "dmem", "d":
 			x1 := uint16(x1)
@@ -405,7 +405,7 @@ func (p *Comet) DebugHelp() string {
 }
 
 // 格式化pc开始的n个指令
-func (p *Comet) ShowInstruction(pc uint16, n int) string {
+func (p *Comet) FormatInstruction(pc uint16, n int) string {
 	var buf bytes.Buffer
 
 	for i := 0; i < n; i++ {
