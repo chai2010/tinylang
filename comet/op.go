@@ -5,6 +5,8 @@
 package comet
 
 // CASL机器指令
+//
+// 新增的指令: MUL, DIV, MOD, HALT, SYSCALL
 const (
 	HALT = 0x00 // 停机
 	LD   = 0x01 // 取数, GR = (E)
@@ -40,6 +42,9 @@ const (
 
 	CALL = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
 	RET  = 0x1A // 返回, SP = (SP)+1
+
+	READ  = 0x20 // 扩展指令, 读一个字符到 GR, 每个字符为uint16
+	WRITE = 0x21 // 扩展指令, 将 GR 对应的 Unicode 码点值 写到标准输出, 每个字符为uint16
 
 	SYSCALL = 0xFF // 系统调用, GR0~GR3可用于交换数据
 )
@@ -85,5 +90,8 @@ var OpTab = [...]struct {
 	CALL: {CALL, "CALL", 2},
 	RET:  {RET, "RET", 1},
 
-	SYSCALL: {SYSCALL, "SYSCALL", 1},
+	READ:  {READ, "READ", 1},
+	WRITE: {WRITE, "WRITE", 1},
+
+	SYSCALL: {SYSCALL, "SYSCALL", 2},
 }

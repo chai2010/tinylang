@@ -13,13 +13,17 @@ import (
 )
 
 const (
-	PC_MAX   = 0xFC00 // PC最大地址
+	MEM_SIZE = 1 << 16 // 内存大小
+
 	SP_START = 0xFC00 // SP栈开始地址
+	PC_START = 0x0000 // PC默认开始地址
+	PC_MAX   = 0xFC00 // PC最大地址
 )
 
 type Coment struct {
 	CPU
-	RW       io.ReadWriter  // 标准输入输出(VM自身使用)
+	Stdin    *bufio.Reader  // 标准输入输出(VM自身使用)
+	Stdout   io.Writer      // 标准输入输出(VM自身使用)
 	Shutdown bool           // 已经关机
 	Syscall  func(id uint8) // 系统调用(有部分必须要实现的保留编号)
 }
@@ -41,15 +45,18 @@ func (*stdReadWriter) Write(p []byte) (n int, err error) {
 }
 
 func NewComent(rw io.ReadWriter, prog []uint16, pc int) *Coment {
-	p := &Coment{RW: rw}
+	if rw == nil {
+		rw = new(stdReadWriter)
+	}
+
+	p := &Coment{
+		Stdin:  bufio.NewReader(rw),
+		Stdout: rw,
+	}
 	copy(p.Mem[:], prog)
 
 	p.PC = uint16(pc)
 	p.GR[4] = SP_START
-
-	if p.RW == nil {
-		p.RW = new(stdReadWriter)
-	}
 
 	return p
 }
@@ -200,6 +207,14 @@ func (p *Coment) StepRun() {
 		p.PC = p.Mem[p.GR[4]]
 		p.GR[4]++
 
+	case READ:
+		p.PC += 1
+		c, _, _ := p.Stdin.ReadRune()
+		p.GR[gr] = uint16(c)
+	case WRITE:
+		p.PC += 1
+		fmt.Fprint(p.Stdout, rune(p.GR[gr]))
+
 	case SYSCALL:
 		if p.Syscall != nil {
 			id := p.Mem[p.PC] % 0x100
@@ -225,9 +240,7 @@ func (p *Coment) DebugRun() {
 
 	for {
 		fmt.Print("输入命令: ")
-
-		bf := bufio.NewReader(p.RW)
-		line, _, _ := bf.ReadLine()
+		line, _, _ := p.Stdin.ReadLine()
 
 		var cmd, x1, x2 = "", 0, 0
 		n, _ := fmt.Fscanf(bytes.NewBuffer(line), "%s%x%x", &cmd, &x1, &x2)
@@ -477,10 +490,10 @@ func (p *Coment) io() {
 
 	for i := 0; i < int(cnt); i++ {
 		if fio == IO_IN {
-			fmt.Fscanf(p.RW, format, &p.Mem[adr])
+			fmt.Fscanf(p.Stdin, format, &p.Mem[adr])
 			adr++
 		} else {
-			fmt.Fprintf(p.RW, format, p.Mem[adr])
+			fmt.Fprintf(p.Stdout, format, p.Mem[adr])
 			adr++
 		}
 	}
