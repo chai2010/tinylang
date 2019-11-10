@@ -13,13 +13,13 @@ const (
 	// 特殊记号
 	ILLEGAL Token = iota // 无效记号
 	EOL                  // 行结尾
-	EOF                  //文件结尾
-	COMMENT              // 注释
+	EOF                  // 文件结尾
+	COMMENT              // 注释, ; 行注释
 
 	// 普通记号
-	ID     // 标识符
-	NUM    // 数字
-	STRING // 字符串
+	ID     // 标识符, main
+	NUM    // 数字, 12345
+	STRING // 字符串, 'abc'
 	COMMA  // 逗号
 
 	keyword_beg

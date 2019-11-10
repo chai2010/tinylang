@@ -18,6 +18,11 @@ type txtReader struct {
 	width int    // 刚读rune的宽度
 }
 
+// 构造
+func newTxtReader(txt string) *txtReader {
+	return &txtReader{txt: txt}
+}
+
 // 读一个字符
 func (p *txtReader) next() rune {
 	if p.pos >= len(p.txt) {
