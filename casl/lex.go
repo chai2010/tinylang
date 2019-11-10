@@ -4,7 +4,9 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // 解析全部记号
 func LexAll(caslCode string) ([]Item, error) {
@@ -16,6 +18,7 @@ type lexer struct {
 	r *txtReader
 }
 
+// 构造词法解析器
 func newLexer(code string) *lexer {
 	return &lexer{r: newTxtReader(code)}
 }
@@ -51,16 +54,16 @@ func (l *lexer) skipSpace() {
 }
 
 // 解析注释
-func (l *lexer) skipComment() {
-	//
+func (l *lexer) lexComment() (string, error) {
+	panic("todo")
 }
 
 // 解析数字
-func (l *lexer) skipNumber() {
-	//
+func (l *lexer) lexNumber() (int, error) {
+	panic("todo")
 }
 
 // 解析字符串
-func (l *lexer) skipString() {
-	//
+func (l *lexer) lexString() (string, error) {
+	panic("todo")
 }
