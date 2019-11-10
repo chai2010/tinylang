@@ -5,6 +5,7 @@
 package main
 
 import (
+	"strings"
 	"unicode/utf8"
 )
 
@@ -49,4 +50,21 @@ func (p *txtReader) peek() rune {
 // 只能在next之后后悔一次,
 func (p *txtReader) backup() {
 	p.pos -= p.width
+}
+
+// 计算pos对应的行列位置(行列号从1开始)
+func (p *txtReader) position(pos int) (line, column int) {
+	if pos < 0 {
+		return 0, 0
+	}
+	if pos > len(p.txt) {
+		pos = len(p.txt)
+	}
+	line = strings.Count(p.txt[:pos], "\n") + 1
+	if i := strings.LastIndexByte(p.txt[:pos], '\n'); i >= 0 {
+		column = pos - i
+	} else {
+		column = 1
+	}
+	return
 }
