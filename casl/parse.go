@@ -5,6 +5,38 @@
 package main
 
 // 解析CASL程序, 返回机器码和对应的可读格式指令
-func ParseCASL(code string) (prog []uint16, ins []string, err error) {
+func ParseCASL(caslCode string) (prog []uint16, ins []string, err error) {
+	return newParser(caslCode).paseAll()
+}
+
+// 语法解析器
+type parser struct {
+	caslCode string
+	macroTok Token // ILLEGAL/START/END
+}
+
+// 构建新的语法解析器
+func newParser(caslCode string) *parser {
+	return &parser{
+		caslCode: caslCode,
+	}
+}
+
+func (p *parser) paseAll() (prog []uint16, ins []string, err error) {
+	// CASL字符串解析为记号列表
+	toks, err := LexAll(p.caslCode)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 依次处理每个记号
+	r := newItemReader(toks)
+	for {
+		switch tok := r.peek(); true {
+		default:
+			_ = tok
+		}
+	}
+
 	panic("TODO")
 }

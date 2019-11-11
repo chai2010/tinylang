@@ -31,12 +31,19 @@ const (
 	DC    // 定义常量
 	DS    // 定义字符串
 
-	// 宏指令
+	// 内置的系统调用指令
 	IN    // 输入
 	OUT   // 输出
 	EXIT  // 退出
 	READ  // 新增, 读
 	WRITE // 新增, 写
+
+	// 寄存器
+	GR0
+	GR1
+	GR2
+	GR3
+	GR4
 
 	// 机器指令
 	// 具体函数参考COMET文档
@@ -127,6 +134,21 @@ var tokens = [...]string{
 	RET:  "RET",
 
 	SYSCALL: "SYSCALL",
+}
+
+// 是否为伪指令
+func (tok Token) IsMACRO() bool {
+	return tok == START || tok == END || tok == DC || tok == DS
+}
+
+// 是否为系统调用宏
+func (tok Token) IsMACRO_SYSCALL() bool {
+	return tok == IN || tok == OUT || tok == EXIT || tok == READ || tok == WRITE
+}
+
+// 是否为寄存器
+func (tok Token) IsGR() bool {
+	return tok == GR0 || tok == GR1 || tok == GR2 || tok == GR3 || tok == GR4
 }
 
 // 是否为关键字
