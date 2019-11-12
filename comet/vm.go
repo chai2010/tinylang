@@ -22,10 +22,10 @@ const (
 
 type Comet struct {
 	CPU
-	Stdin    *bufio.Reader                     // 标准输入输出(VM自身使用)
-	Stdout   io.Writer                         // 标准输入输出(VM自身使用)
-	Shutdown bool                              // 已经关机
-	Syscall  func(ctx *Comet, id uint8) uint16 // 系统调用(GR0是返回值)
+	Stdin    *bufio.Reader              // 标准输入输出(VM自身使用)
+	Stdout   io.Writer                  // 标准输入输出(VM自身使用)
+	Shutdown bool                       // 已经关机
+	Syscall  func(ctx *Comet, id uint8) // 系统调用(GR0是返回值)
 }
 
 type CPU struct {
@@ -75,6 +75,7 @@ func (p *Comet) StepRun() {
 	var gr = (p.Mem[p.PC] % 0x100) / 0x10
 	var xr = p.Mem[p.PC] % 0x10
 	var adr = p.Mem[p.PC+1]
+	var syscalId = uint8(p.Mem[p.PC] % 0x100)
 
 	if gr < 0 || gr > 4 {
 		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
@@ -204,10 +205,8 @@ func (p *Comet) StepRun() {
 		p.GR[4]++
 
 	case SYSCALL:
-		if p.Syscall != nil {
-			var syscalId = uint8(p.Mem[p.PC] % 0x100)
-			p.GR[0] = p.Syscall(p, syscalId)
-		}
+		p.PC += 1
+		p.Syscall(p, syscalId)
 
 	default:
 		p.Shutdown = true
