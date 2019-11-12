@@ -146,6 +146,11 @@ func (tok Token) IsMACRO_SYSCALL() bool {
 	return tok == IN || tok == OUT || tok == EXIT || tok == READ || tok == WRITE
 }
 
+// 是否为机器指令
+func (tok Token) IsCOMET_INS() bool {
+	return false // todo
+}
+
 // 是否为寄存器
 func (tok Token) IsGR() bool {
 	return tok == GR0 || tok == GR1 || tok == GR2 || tok == GR3 || tok == GR4
@@ -177,15 +182,18 @@ func init() {
 	}
 }
 
-// 查找ID或对应的关键字
-func Lookup(id string) Token {
-	if tok, is_keyword := keywords[id]; is_keyword {
-		return tok
+// 查找记号或对应的关键字
+func Lookup(s string) Token {
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i] == s {
+			return Token(i)
+		}
 	}
-	return ID
+	return ILLEGAL
 }
 
 // 判断名字是否为关键字
 func IsKeyword(name string) bool {
-	return Lookup(name).IsKeyword()
+	_, is_keyword := keywords[name]
+	return is_keyword
 }

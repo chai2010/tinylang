@@ -11,11 +11,13 @@ import (
 
 // 完整指令
 type Instruction struct {
+	Label     string // 标号
 	Op        OpType // 指令码
 	GR        uint16 // 通用寄存器
 	XR        uint16 // 寻址寄存器
 	ADR       uint16 // 地址
 	SyscallId uint8  // 系统调用号
+	Comment   string // 注释
 }
 
 // 解码指令
@@ -49,8 +51,22 @@ func (p *Instruction) Valid() bool {
 
 // 格式化指令
 func (p *Instruction) String() string {
+	var buf bytes.Buffer
+
+	// 无效指令
 	if !p.Valid() {
-		return "invalid"
+		if p.Label == "" {
+			fmt.Fprint(&buf, "invalid")
+		} else {
+			fmt.Fprint(&buf, p.Label)
+		}
+		return buf.String()
+	}
+
+	// 有标号
+	if p.Label != "" {
+		fmt.Fprint(&buf, p.Label+" ")
+		return buf.String()
 	}
 
 	// 系统调用单独处理
@@ -60,7 +76,6 @@ func (p *Instruction) String() string {
 	}
 
 	// 包含GR参数
-	var buf bytes.Buffer
 	if p.Op.UseGR() {
 		if p.Op.Size() == 2 {
 			if p.XR != 0 {

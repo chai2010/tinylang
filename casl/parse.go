@@ -4,8 +4,16 @@
 
 package main
 
+import (
+	"fmt"
+
+	"github.com/chai2010/tinylang/comet"
+)
+
+// TODO: 返回指令列表, 然后再生成指令
+
 // 解析CASL程序, 返回机器码和对应的可读格式指令
-func ParseCASL(caslCode string) (prog []uint16, ins []string, err error) {
+func ParseCASL(caslCode string) (prog []comet.Instruction, err error) {
 	return newParser(caslCode).paseAll()
 }
 
@@ -22,24 +30,75 @@ func newParser(caslCode string) *parser {
 	}
 }
 
-func (p *parser) paseAll() (prog []uint16, ins []string, err error) {
+func (p *parser) paseAll() (prog []comet.Instruction, err error) {
 	// CASL字符串解析为记号列表
 	toks, err := LexAll(p.caslCode)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	// 依次处理每个记号
+	// 行记号读接口
 	r := newItemReader(toks)
+
+	// 依次处理每行的记号
 Loop:
-	for {
-		switch tok := r.peek(); true {
-		case tok.Typ == EOL || tok.Typ == EOF: // 一行只有一个语句
+	for !r.atEOF() {
+		// 读取一行
+		toks := r.nextLine()
+
+		// 跳过空行(行尾记号已经被丢弃)
+		if len(toks) == 0 {
 			continue Loop
-		case tok.Typ == ID: // 标号
+		}
+
+		// 要解析的指令
+		var ins comet.Instruction
+
+		// 解析标号
+		if len(toks) > 0 {
+			if tok := toks[0]; tok.Typ == ID {
+				ins.Label = tok.Val
+				toks = toks[1:]
+			}
+		}
+
+		// 解析指令
+		var op = Lookup(toks[0].Val)
+
+		// 解析宏指令
+		if op.IsMACRO() {
+			// TODO
+			continue
+		}
+
+		// 解析系统指令
+		if op.IsMACRO_SYSCALL() {
+			// TODO
+			continue
+		}
+
+		// 解析COMET指令
+		if op.IsCOMET_INS() {
+			// TODO
+			continue
+		}
+
+		// 其它未知指令
+		if tok := toks[0]; tok.Typ.IsKeyword() {
+			//ins.Op = Lookup(tok.Val)
+			toks = toks[1:]
+		} else {
+			err = fmt.Errorf("非法记号: %v", tok)
+			return
+		}
+
+		// 判断行内第一个记号
+
+		switch {
+		case toks[0].Typ == ID: // 标号
 
 		default:
-			_ = tok
+
 		}
 	}
 
