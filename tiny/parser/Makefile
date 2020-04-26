@@ -3,8 +3,13 @@
 # license that can be found in the LICENSE file.
 
 default:
-	-@go fmt ./...
-	-@go vet ./...
-	go run main.go sum.tiny
+	go run 0_gen.go > zz_utils.go
+	make goyacc
+
+	-@go fmt
+	go test
+
+goyacc:
+	goyacc -o tiny.y.go -p "yy" tiny.y
 
 clean:

@@ -1,61 +1,74 @@
-// Copyright 2019 <chaishushan{AT}gmail.com>. All rights reserved.
+// Copyright 2020 <chaishushan{AT}gmail.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Coment虚拟机
 package main
 
 import (
-	"encoding/binary"
 	"flag"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/chai2010/tinylang/comet"
+	"github.com/chai2010/tinylang/tiny/compiler"
+	"github.com/chai2010/tinylang/tiny/parser"
 )
 
 var (
-	flagFile  = flag.String("f", "sum.comet", "comet app file")
-	flagDebug = flag.Bool("d", false, "debug mode")
+	flagAst   = flag.Bool("ast", false, "print ast and exit")
+	flagCASL  = flag.Bool("casl", false, "print casl assembly and exit")
+	flagDebug = flag.Bool("debug", false, "run with debug mode")
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile)
+	flag.Usage = func() {
+		fmt.Fprintln(os.Stdout, `usage: tiny [flags] file.tiny`)
+		flag.PrintDefaults()
+	}
 }
 
 func main() {
 	flag.Parse()
 
-	bin, pc := loadBin(*flagFile)
-	vm := comet.NewComet(bin, pc)
+	if flag.NArg() != 1 {
+		flag.Usage()
+		return
+	}
 
+	filename := flag.Arg(0)
+	f, err := parser.ParseFile(filename, nil)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if *flagAst {
+		fmt.Print(f)
+		return
+	}
+
+	c := compiler.NewCompiler()
+	bytecode, err := c.Compile(f)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if *flagCASL {
+		fmt.Print(c.CASLString())
+		return
+	}
+
+	prog, err := comet.LoadProgram(filename, bytecode)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	vm := comet.NewComet(prog)
 	if *flagDebug {
 		vm.DebugRun()
 	} else {
 		vm.Run()
 	}
-}
-
-func loadBin(path string) (bin []uint16, pc int) {
-	f, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	var hdr struct {
-		PC  uint16
-		Len uint16
-	}
-
-	if err = binary.Read(f, binary.LittleEndian, &hdr); err != nil {
-		log.Fatal(err)
-	}
-
-	data := make([]uint16, int(hdr.Len))
-	if err = binary.Read(f, binary.LittleEndian, &data); err != nil {
-		log.Fatal(err)
-	}
-
-	return data, int(hdr.PC)
 }

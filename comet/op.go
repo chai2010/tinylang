@@ -47,6 +47,7 @@ const (
 
 	CALL OpType = 0x19 // 调用, SP = (SP)-1，(SP) = (PC)+2，PC = E
 	RET  OpType = 0x1A // 返回, SP = (SP)+1
+	NOP  OpType = 0x1B // 空指令
 
 	SYSCALL OpType = 0xFF // 系统调用, 低8bit是调用号, GR0~GR3可用于交换数据
 )
@@ -60,6 +61,10 @@ func (op OpType) UseGR() bool {
 		return OpTab[op].UseGR
 	}
 	return false
+}
+
+func (op OpType) UseADR() bool {
+	return op.Size() > 1
 }
 
 func (op OpType) Size() uint16 {
@@ -118,9 +123,10 @@ var OpTab = [...]struct {
 	JZE: {JZE, "JZE", 2, false},
 
 	PUSH: {PUSH, "PUSH", 2, false},
-	POP:  {POP, "POP", 1, false},
+	POP:  {POP, "POP", 1, true},
 	CALL: {CALL, "CALL", 2, false},
 	RET:  {RET, "RET", 1, false},
+	NOP:  {NOP, "HALT", 1, false},
 
-	SYSCALL: {SYSCALL, "SYSCALL", 1, false},
+	SYSCALL: {SYSCALL, "SYSCALL", 2, true},
 }

@@ -221,6 +221,92 @@ skipCOMMA(void)
 }
 
 void
+macro_in(void)
+{
+	static off_t cmd[] = {
+		ST   << 8, ac_comet,
+		PUSH << 8, ac_comet,
+		LEA  << 8, 0,
+		ST   << 8, IO_ADDR,
+		LEA  << 8, IO_MAX,
+		ST   << 8, ac_comet,
+		LD   << 8, 0,
+		AND  << 8, ac_comet,
+		ST   << 8, ac_comet,
+		PUSH << 8, ac_comet,
+		LEA  << 8, IO_CHR | IO_IN,
+		ST   << 8, ac_comet,
+		POP  << 8,
+		OR   << 8, ac_comet,
+		ST   << 8, IO_FLAG,
+		POP  << 8 };
+	const short ai = 5, ni = 13;
+	int i;
+	if(token == ID)
+		cmd[ai] = lab_get(tokStr, pc+ai);
+	else if(token == NUM)
+		cmd[ai] = (short)atoi(tokStr);
+	else
+		QUIT("READ参数错误");
+	getToken(); skipCOMMA();
+	if(token == ID)
+		cmd[ni] = lab_get(tokStr, pc+ai);
+	else if(token == NUM)
+		cmd[ni] = (short)atoi(tokStr);
+	else
+		QUIT("READ参数错误");
+	for(i = 0; i < NELEMS(cmd); ++i)
+		mem[pc++] = cmd[i];
+	getToken();
+}
+
+void
+macro_out(void)
+{
+	static off_t cmd[] = {
+		ST   << 8, ac_comet,
+		PUSH << 8, ac_comet,
+		LEA  << 8, 0,
+		ST   << 8, IO_ADDR,
+		LEA  << 8, IO_MAX,
+		ST   << 8, ac_comet,
+		LD   << 8, 0,
+		AND  << 8, ac_comet,
+		ST   << 8, ac_comet,
+		PUSH << 8, ac_comet,
+		LEA  << 8, IO_CHR | IO_OUT,
+		ST   << 8, ac_comet,
+		POP  << 8,
+		OR   << 8, ac_comet,
+		ST   << 8, IO_FLAG,
+		POP  << 8 };
+	const short ai = 5, ni = 13;
+	int i;
+	if(token == ID)
+		cmd[ai] = lab_get(tokStr, pc+ai);
+	else if(token == NUM)
+		cmd[ai] = (short)atoi(tokStr);
+	else
+		QUIT("READ参数错误");
+	getToken(); skipCOMMA();
+	if(token == ID)
+		cmd[ni] = lab_get(tokStr, pc+ai);
+	else if(token == NUM)
+		cmd[ni] = (short)atoi(tokStr);
+	else
+		QUIT("READ参数错误");
+	for(i = 0; i < NELEMS(cmd); ++i)
+		mem[pc++] = cmd[i];
+	getToken();
+}
+
+void
+macro_exit(void)
+{
+	mem[pc++] = (short)(HALT << 8);
+}
+
+void
 macro_read(void)
 {
 	static off_t cmd[] = {
@@ -353,8 +439,11 @@ buildCode(void)
 				if(op == POP) skipGR();
 				pc += 1; break;
 				
+			case IN: macro_in(); break;
+			case OUT: macro_out(); break;
 			case READ: macro_read(); break;
 			case WRITE: macro_write(); break;
+			case EXIT: macro_exit(); break;
 			case DC: macro_dc(); break;
 			case DS: macro_ds(); break;
 			case START: macro_start(); break;

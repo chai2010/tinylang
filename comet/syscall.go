@@ -9,17 +9,37 @@ import (
 	"log"
 )
 
+type SyscallId byte
+
 // 内置的系统调用
 const (
-	SYSCALL_READ  = 1 // 读一个十进制整数到GR0
-	SYSCALL_WRITE = 2 // 输出GR10十进制格式整数
+	SYSCALL_READ  SyscallId = 1 // 读一个十进制整数到GR0
+	SYSCALL_WRITE SyscallId = 2 // 输出GR0十进制格式整数
 
-	SYSCALL_IN   = 3 // 读N个字符, GR0是地址, GR1是N
-	SYSCALL_OUT  = 4 // 写N个字符, GR0是地址, GR1是N
-	SYSCALL_EXIT = 5 // 结束程序
+	SYSCALL_IN   SyscallId = 3 // 读N个字符, GR0是地址, GR1是N
+	SYSCALL_OUT  SyscallId = 4 // 写N个字符, GR0是地址, GR1是N
+	SYSCALL_EXIT SyscallId = 5 // 结束程序
 
-	SYSCALL_USER_START = 64 // 用户的系统调号从此开始
+	SYSCALL_USER_START SyscallId = 64 // 用户的系统调号从此开始
 )
+
+func (id SyscallId) String() string {
+	switch id {
+	case SYSCALL_READ:
+		return "READ"
+	case SYSCALL_WRITE:
+		return "WRITE"
+
+	case SYSCALL_IN:
+		return "IN"
+	case SYSCALL_OUT:
+		return "OUT"
+	case SYSCALL_EXIT:
+		return "EXIT"
+	}
+
+	return fmt.Sprintf("SyscallId(%d)", id)
+}
 
 // 注册内置的系统调用
 func init() {
@@ -36,14 +56,14 @@ func init() {
 var syscallTable [256]func(ctx *Comet)
 
 // 系统调用
-func Syscall(ctx *Comet, id uint8) {
+func Syscall(ctx *Comet, id SyscallId) {
 	if fn := syscallTable[id]; fn != nil {
 		fn(ctx)
 	}
 }
 
 // 注册系统调用(会覆盖之前的系统调用)
-func RegisterSyscall(id uint8, syscall func(ctx *Comet)) error {
+func RegisterSyscall(id SyscallId, syscall func(ctx *Comet)) error {
 	if syscallTable[id] != nil {
 		log.Printf("COMET: 系统调用 [%d] 被覆盖\n", id)
 	}
@@ -53,7 +73,8 @@ func RegisterSyscall(id uint8, syscall func(ctx *Comet)) error {
 
 // 读一个十进制整数到GR0
 func builtinSyscall_readInt(ctx *Comet) {
-	fmt.Fscanf(ctx.Stdin, "%d", ctx.GR[0])
+	line, _, _ := ctx.Stdin.ReadLine()
+	fmt.Sscanf(string(line), "%d", &ctx.GR[0])
 }
 
 // 输出GR10十进制格式整数

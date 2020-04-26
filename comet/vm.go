@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// COMET 虚拟机
 package comet
 
 import (
@@ -17,15 +18,14 @@ const (
 
 	SP_START = 0xFC00 // SP栈开始地址
 	PC_START = 0x0000 // PC默认开始地址
-	PC_MAX   = 0xFC00 // PC最大地址
 )
 
 type Comet struct {
 	CPU
-	Stdin    *bufio.Reader              // 标准输入输出(VM自身使用)
-	Stdout   io.Writer                  // 标准输入输出(VM自身使用)
-	Shutdown bool                       // 已经关机
-	Syscall  func(ctx *Comet, id uint8) // 系统调用(GR0是返回值)
+	Stdin    *bufio.Reader                  // 标准输入输出(VM自身使用)
+	Stdout   io.Writer                      // 标准输入输出(VM自身使用)
+	Shutdown bool                           // 已经关机
+	Syscall  func(ctx *Comet, id SyscallId) // 系统调用(GR0是返回值)
 }
 
 type CPU struct {
@@ -35,20 +35,21 @@ type CPU struct {
 	Mem [1 << 16]uint16 // 64KB内存
 }
 
-type stdReadWriter struct{}
-
-func (*stdReadWriter) Read(p []byte) (n int, err error) {
-	return os.Stdin.Read(p)
-}
-func (*stdReadWriter) Write(p []byte) (n int, err error) {
-	return os.Stdout.Write(p)
+// COMET 程序
+type Program struct {
+	PC  uint16
+	Bin []uint16
 }
 
-func NewComet(prog []uint16, pc int) *Comet {
-	p := new(Comet)
-	copy(p.Mem[:], prog)
+func NewComet(prog *Program) *Comet {
+	p := &Comet{
+		Syscall: func(ctx *Comet, id SyscallId) {
+			Syscall(ctx, id)
+		},
+	}
+	copy(p.Mem[:], prog.Bin)
 
-	p.PC = uint16(pc)
+	p.PC = prog.PC
 	p.GR[4] = SP_START
 
 	p.Stdin = bufio.NewReader(os.Stdin)
@@ -75,15 +76,35 @@ func (p *Comet) StepRun() {
 	var gr = (p.Mem[p.PC] % 0x100) / 0x10
 	var xr = p.Mem[p.PC] % 0x10
 	var adr = p.Mem[p.PC+1]
-	var syscalId = uint8(p.Mem[p.PC] % 0x100)
+	var syscalId = SyscallId(adr)
 
+	// 非法指令
+	if !op.Valid() {
+		fmt.Printf("Illegal code: mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		p.Shutdown = true
+		return
+	}
+
+	// 判断 GR
+	if !op.UseGR() && gr != 0 {
+		fmt.Printf("Illegal code: mem[%x] = %x; %s\n", p.PC, p.Mem[p.PC], "invalid GR")
+		p.Shutdown = true
+		return
+	}
 	if gr < 0 || gr > 4 {
-		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		fmt.Printf("Illegal code: mem[%x] = %x； %s\n", p.PC, p.Mem[p.PC], "invalid GR")
+		p.Shutdown = true
+		return
+	}
+
+	// 判断 xr
+	if !op.UseADR() && xr != 0 {
+		fmt.Printf("Illegal code: mem[%x] = %x; %s\n", p.PC, p.Mem[p.PC], "invalid XR")
 		p.Shutdown = true
 		return
 	}
 	if xr < 0 || xr > 4 {
-		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		fmt.Printf("Illegal code: mem[%x] = %x; %s\n", p.PC, p.Mem[p.PC], "invalid XR")
 		p.Shutdown = true
 		return
 	}
@@ -91,126 +112,98 @@ func (p *Comet) StepRun() {
 		adr = uint16(int32(adr) + int32(p.GR[xr]))
 	}
 
-	// 临时: 处理IO
-	p.io()
+	// 调整 PC
+	p.PC += op.Size()
 
-	// 指令解码
+	// 执行指令
 	switch op {
 	case HALT:
-		p.PC += 1
 		p.Shutdown = true
 	case LD:
-		p.PC += 2
 		p.GR[gr] = p.Mem[adr]
 	case ST:
-		p.PC += 2
 		p.Mem[adr] = p.GR[gr]
 	case LEA:
-		p.PC += 2
 		p.GR[gr] = adr
 		p.FR = int16(p.GR[gr])
 	case ADD:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) + int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case SUB:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) - int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case MUL:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) * int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case DIV:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) / int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case MOD:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) % int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case AND:
-		p.PC += 2
 		p.GR[gr] &= p.Mem[adr]
 		p.FR = int16(p.GR[gr])
 	case OR:
-		p.PC += 2
 		p.GR[gr] |= p.Mem[adr]
 		p.FR = int16(p.GR[gr])
 	case EOR:
-		p.PC += 2
 		p.GR[gr] ^= p.Mem[adr]
 		p.FR = int16(p.GR[gr])
 	case SLA:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) << int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case SRA:
-		p.PC += 2
 		p.GR[gr] = uint16(int16(p.GR[gr]) >> int16(p.Mem[adr]))
 		p.FR = int16(p.GR[gr])
 	case SLL:
-		p.PC += 2
 		p.GR[gr] = p.GR[gr] << p.Mem[adr]
 		p.FR = int16(p.GR[gr])
 	case SRL:
-		p.PC += 2
 		p.GR[gr] = p.GR[gr] >> p.Mem[adr]
 		p.FR = int16(p.GR[gr])
 	case CPA:
-		p.PC += 2
 		p.FR = int16(p.GR[gr]) - int16(p.Mem[adr])
 	case CPL:
-		p.PC += 2
 		p.FR = int16(p.GR[gr] - p.Mem[adr])
 	case JMP:
-		p.PC += 2
 		p.PC = adr
 	case JPZ:
-		p.PC += 2
 		if p.FR >= 0 {
 			p.PC = adr
 		}
 	case JMI:
-		p.PC += 2
 		if p.FR < 0 {
 			p.PC = adr
 		}
 	case JNZ:
-		p.PC += 2
 		if p.FR != 0 {
 			p.PC = adr
 		}
 	case JZE:
-		p.PC += 2
 		if p.FR == 0 {
 			p.PC = adr
 		}
 	case PUSH:
-		p.PC += 2
 		p.Mem[p.GR[4]-1] = p.Mem[adr]
 		p.GR[4]--
 	case POP:
-		p.PC += 1
 		p.GR[gr] = p.Mem[p.GR[4]]
 		p.GR[4]++
 	case CALL:
-		p.PC += 2
 		p.Mem[p.GR[4]-1] = p.PC
 		p.PC = p.Mem[adr]
 		p.GR[4]--
 	case RET:
-		p.PC += 1
 		p.PC = p.Mem[p.GR[4]]
 		p.GR[4]++
-
+	case NOP:
+		// empty
 	case SYSCALL:
-		p.PC += 1
 		p.Syscall(p, syscalId)
 
 	default:
-		p.Shutdown = true
-		fmt.Printf("非法指令：mem[%x] = %x\n", p.PC, p.Mem[p.PC])
+		panic("unreachable")
 	}
 }
 
@@ -222,11 +215,11 @@ func (p *Comet) DebugRun() {
 		traflag bool
 	)
 
-	fmt.Println("调试 （帮助输入 help）...")
+	fmt.Println("Debug (enter h for help)...")
 	fmt.Println()
 
 	for {
-		fmt.Print("输入命令: ")
+		fmt.Print("Enter command: ")
 		line, _, _ := p.Stdin.ReadLine()
 
 		// 删除空白字符
@@ -234,7 +227,7 @@ func (p *Comet) DebugRun() {
 
 		// 跳过空白行
 		if string(line) == "" {
-			fmt.Fprintln(p.Stdout)
+			fmt.Println()
 			continue
 		}
 
@@ -246,7 +239,7 @@ func (p *Comet) DebugRun() {
 			fmt.Println(p.DebugHelp())
 		case "go", "g":
 			if p.Shutdown {
-				fmt.Println("已经停机, 输入 `clear` 指令重置机器")
+				fmt.Println("halted, enter `clear` to reset VM")
 				continue
 			}
 			stepcnt = 0
@@ -260,12 +253,12 @@ func (p *Comet) DebugRun() {
 				p.StepRun()
 			}
 			if pntflag {
-				fmt.Printf("执行指令数目 = %d\n", stepcnt)
+				fmt.Printf("step count = %d\n", stepcnt)
 			}
 
 		case "step", "s":
 			if p.Shutdown {
-				fmt.Println("已经停机, 输入 `clear` 指令重置机器")
+				fmt.Println("halted, enter `clear` to reset VM")
 				continue
 			}
 
@@ -285,20 +278,18 @@ func (p *Comet) DebugRun() {
 				p.StepRun()
 			}
 			if pntflag {
-				fmt.Printf("执行指令数目 = %d\n", i)
+				fmt.Printf("step count = %d\n", i)
 			}
 
 		case "jump", "j":
 			if n >= 2 {
-				fmt.Printf("指令跳转到 %x\n", x1)
 				p.PC = uint16(x1)
+				fmt.Printf("PC = %x\n", x1)
 			} else {
-				fmt.Println("错误: 缺少跳转地址")
+				fmt.Println("invalid command")
 			}
 
 		case "regs", "r":
-			fmt.Println("显示寄存器数据")
-
 			switch {
 			case p.FR > 0:
 				fmt.Printf("GR[0] = %04x\tPC = %04x\n", p.GR[0], p.PC)
@@ -318,8 +309,6 @@ func (p *Comet) DebugRun() {
 			}
 
 		case "iMem", "imem", "i":
-			fmt.Println("显示内存指令")
-
 			x1 := uint16(x1)
 			if n < 2 {
 				x1 = p.PC
@@ -346,57 +335,55 @@ func (p *Comet) DebugRun() {
 
 		case "alter", "a":
 			if n == 3 {
-				fmt.Printf("修改内存数据  mem[%x] = %x\n", x1, x2)
+				fmt.Printf("mem[%x] = %x\n", x1, x2)
 				p.Mem[x1] = uint16(x2)
 			} else {
-				fmt.Println("修改内存数据 失败！")
+				fmt.Println("invalid command")
 			}
 
 		case "trace", "t":
 			traflag = !traflag
 			if traflag {
-				fmt.Println("指令显示功能 打开")
+				fmt.Println("trace instruction now on")
 			} else {
-				fmt.Println("指令显示功能 关闭")
+				fmt.Println("trace instruction now off")
 			}
 
 		case "print", "p":
 			pntflag = !pntflag
 			if pntflag {
-				fmt.Println("指令计数功能 打开")
+				fmt.Println("Printing instruction count now on")
 			} else {
-				fmt.Println("指令计数功能 关闭")
+				fmt.Println("Printing instruction count now off")
 			}
 
 		case "clear", "c":
-			fmt.Println("程序重新载入内存")
 			*p = backup
 			stepcnt = 0
 
 		case "quit", "q":
-			fmt.Println("退出调试...")
 			return
 
 		default:
-			fmt.Println("未知命令", cmd)
+			fmt.Println("unknown command:", cmd)
 		}
 	}
 }
 
 func (p *Comet) DebugHelp() string {
-	return `命令列表:
-  h)elp           显示本命令列表
-  g)o             运行程序直到停止
-  s)tep  <n>      执行 n 条指令 （默认为 1 ）
-  j)ump  <b>      跳转到 b 地址 （默认为当前地址）
-  r)egs           显示寄存器内容
-  i)Mem  <b <n>>  显示从 b 开始 n 个内存数据
-  d)Mem  <b <n>>  显示从 b 开始 n 个内存指令
-  a(lter <b <v>>  修改 b 位置的内存数据为 v 值
-  t)race          开关指令显示功能
-  p)rint          开关指令计数功能
-  c)lear          重置模拟器内容
-  q)uit           终止模拟器
+	return `Commands are:
+  h)elp           show help command list
+  g)o             run instructions until HALT
+  s)tep  <n>      run n (default 1) instructions
+  j)ump  <b>      jump to the b (default is current location)
+  r)egs           print the contents of the registers
+  i)Mem  <b <n>>  print n iMem locations starting at b
+  d)Mem  <b <n>>  print n dMem locations starting at b
+  a(lter <b <v>>  change the memory value at v
+  t)race          toggle instruction trace
+  p)rint          toggle print of total instructions executed
+  c)lear          reset comet VM
+  q)uit           exit
 `
 }
 
@@ -416,43 +403,4 @@ func (p *Comet) FormatInstruction(pc uint16, n int) string {
 	}
 
 	return buf.String()
-}
-
-func (p *Comet) io() {
-	cnt := p.Mem[IO_FLAG] & IO_MAX
-	if cnt == 0 {
-		return
-	}
-
-	fio := p.Mem[IO_FLAG] & IO_FIO
-	typ := p.Mem[IO_FLAG] & IO_TYPE
-	adr := p.Mem[IO_ADDR]
-
-	var format string
-	switch {
-	case typ == IO_CHR:
-		format = "%c"
-	case typ == IO_OCT:
-		format = "%o"
-	case typ == IO_DEC:
-		format = "%d"
-	case typ == IO_HEX:
-		format = "%x"
-	default:
-		p.Mem[IO_FLAG] |= IO_ERROR
-		p.Mem[IO_FLAG] &= ^uint16(IO_MAX)
-		return
-	}
-
-	for i := 0; i < int(cnt); i++ {
-		if fio == IO_IN {
-			fmt.Fscanf(p.Stdin, format, &p.Mem[adr])
-			adr++
-		} else {
-			fmt.Fprintf(p.Stdout, format, p.Mem[adr])
-			adr++
-		}
-	}
-
-	p.Mem[IO_FLAG] &= ^uint16(IO_MAX)
 }

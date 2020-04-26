@@ -1,0 +1,495 @@
+
+ 0: reduce/reduce conflict  (red'ns 2 and 10) on $end
+state 0
+	$accept: .program $end 
+	program: .    (2)
+	stmt: .    (10)
+
+	_IDENT  shift 11
+	_IF  shift 9
+	_REPEAT  shift 10
+	_READ  shift 12
+	_WRITE  shift 13
+	_SEMI  reduce 10 (src line 120)
+	.  reduce 2 (src line 82)
+
+	program  goto 1
+	assign_stmt  goto 6
+	if_stmt  goto 4
+	repeat_stmt  goto 5
+	read_stmt  goto 7
+	write_stmt  goto 8
+	stmt  goto 3
+	stmt_seq  goto 2
+
+state 1
+	$accept:  program.$end 
+
+	$end  accept
+	.  error
+
+
+state 2
+	program:  stmt_seq.    (1)
+	stmt_seq:  stmt_seq._SEMI stmt 
+
+	_SEMI  shift 14
+	.  reduce 1 (src line 69)
+
+
+state 3
+	stmt_seq:  stmt.    (4)
+
+	.  reduce 4 (src line 92)
+
+
+state 4
+	stmt:  if_stmt.    (5)
+
+	.  reduce 5 (src line 99)
+
+
+state 5
+	stmt:  repeat_stmt.    (6)
+
+	.  reduce 6 (src line 104)
+
+
+state 6
+	stmt:  assign_stmt.    (7)
+
+	.  reduce 7 (src line 108)
+
+
+state 7
+	stmt:  read_stmt.    (8)
+
+	.  reduce 8 (src line 112)
+
+
+state 8
+	stmt:  write_stmt.    (9)
+
+	.  reduce 9 (src line 116)
+
+
+state 9
+	if_stmt:  _IF.exp _THEN stmt_seq _END 
+	if_stmt:  _IF.exp _THEN stmt_seq _ELSE stmt_seq _END 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	exp  goto 15
+	term  goto 17
+	simple_exp  goto 16
+
+state 10
+	repeat_stmt:  _REPEAT.stmt_seq _UNTIL exp 
+	stmt: .    (10)
+
+	_IDENT  shift 11
+	_IF  shift 9
+	_REPEAT  shift 10
+	_READ  shift 12
+	_WRITE  shift 13
+	.  reduce 10 (src line 120)
+
+	assign_stmt  goto 6
+	if_stmt  goto 4
+	repeat_stmt  goto 5
+	read_stmt  goto 7
+	write_stmt  goto 8
+	stmt  goto 3
+	stmt_seq  goto 22
+
+state 11
+	assign_stmt:  _IDENT._ASSIGN exp 
+
+	_ASSIGN  shift 23
+	.  error
+
+
+state 12
+	read_stmt:  _READ._IDENT 
+
+	_IDENT  shift 24
+	.  error
+
+
+state 13
+	write_stmt:  _WRITE.exp 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	exp  goto 25
+	term  goto 17
+	simple_exp  goto 16
+
+state 14
+	stmt_seq:  stmt_seq _SEMI.stmt 
+	stmt: .    (10)
+
+	_IDENT  shift 11
+	_IF  shift 9
+	_REPEAT  shift 10
+	_READ  shift 12
+	_WRITE  shift 13
+	.  reduce 10 (src line 120)
+
+	assign_stmt  goto 6
+	if_stmt  goto 4
+	repeat_stmt  goto 5
+	read_stmt  goto 7
+	write_stmt  goto 8
+	stmt  goto 26
+
+state 15
+	if_stmt:  _IF exp._THEN stmt_seq _END 
+	if_stmt:  _IF exp._THEN stmt_seq _ELSE stmt_seq _END 
+
+	_THEN  shift 27
+	.  error
+
+
+state 16
+	exp:  simple_exp._LT simple_exp 
+	exp:  simple_exp._EQ simple_exp 
+	exp:  simple_exp.    (19)
+	simple_exp:  simple_exp._PLUS term 
+	simple_exp:  simple_exp._MINUS term 
+
+	_EQ  shift 29
+	_LT  shift 28
+	_PLUS  shift 30
+	_MINUS  shift 31
+	.  reduce 19 (src line 214)
+
+
+state 17
+	simple_exp:  term.    (22)
+	term:  term._TIMES factor 
+	term:  term._OVER factor 
+
+	_TIMES  shift 32
+	_OVER  shift 33
+	.  reduce 22 (src line 238)
+
+
+state 18
+	term:  factor.    (25)
+
+	.  reduce 25 (src line 262)
+
+
+state 19
+	factor:  _LPAREN.exp _RPAREN 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	exp  goto 34
+	term  goto 17
+	simple_exp  goto 16
+
+state 20
+	factor:  _NUMBER.    (27)
+
+	.  reduce 27 (src line 276)
+
+
+state 21
+	factor:  _IDENT.    (28)
+
+	.  reduce 28 (src line 289)
+
+
+state 22
+	stmt_seq:  stmt_seq._SEMI stmt 
+	repeat_stmt:  _REPEAT stmt_seq._UNTIL exp 
+
+	_UNTIL  shift 35
+	_SEMI  shift 14
+	.  error
+
+
+state 23
+	assign_stmt:  _IDENT _ASSIGN.exp 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	exp  goto 36
+	term  goto 17
+	simple_exp  goto 16
+
+state 24
+	read_stmt:  _READ _IDENT.    (15)
+
+	.  reduce 15 (src line 174)
+
+
+state 25
+	write_stmt:  _WRITE exp.    (16)
+
+	.  reduce 16 (src line 186)
+
+
+state 26
+	stmt_seq:  stmt_seq _SEMI stmt.    (3)
+
+	.  reduce 3 (src line 87)
+
+
+state 27
+	if_stmt:  _IF exp _THEN.stmt_seq _END 
+	if_stmt:  _IF exp _THEN.stmt_seq _ELSE stmt_seq _END 
+	stmt: .    (10)
+
+	_IDENT  shift 11
+	_IF  shift 9
+	_REPEAT  shift 10
+	_READ  shift 12
+	_WRITE  shift 13
+	.  reduce 10 (src line 120)
+
+	assign_stmt  goto 6
+	if_stmt  goto 4
+	repeat_stmt  goto 5
+	read_stmt  goto 7
+	write_stmt  goto 8
+	stmt  goto 3
+	stmt_seq  goto 37
+
+state 28
+	exp:  simple_exp _LT.simple_exp 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	term  goto 17
+	simple_exp  goto 38
+
+state 29
+	exp:  simple_exp _EQ.simple_exp 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	term  goto 17
+	simple_exp  goto 39
+
+state 30
+	simple_exp:  simple_exp _PLUS.term 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	term  goto 40
+
+state 31
+	simple_exp:  simple_exp _MINUS.term 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	term  goto 41
+
+state 32
+	term:  term _TIMES.factor 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 42
+
+state 33
+	term:  term _OVER.factor 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 43
+
+state 34
+	factor:  _LPAREN exp._RPAREN 
+
+	_RPAREN  shift 44
+	.  error
+
+
+state 35
+	repeat_stmt:  _REPEAT stmt_seq _UNTIL.exp 
+
+	_IDENT  shift 21
+	_NUMBER  shift 20
+	_LPAREN  shift 19
+	.  error
+
+	factor  goto 18
+	exp  goto 45
+	term  goto 17
+	simple_exp  goto 16
+
+state 36
+	assign_stmt:  _IDENT _ASSIGN exp.    (14)
+
+	.  reduce 14 (src line 161)
+
+
+state 37
+	stmt_seq:  stmt_seq._SEMI stmt 
+	if_stmt:  _IF exp _THEN stmt_seq._END 
+	if_stmt:  _IF exp _THEN stmt_seq._ELSE stmt_seq _END 
+
+	_ELSE  shift 47
+	_END  shift 46
+	_SEMI  shift 14
+	.  error
+
+
+state 38
+	exp:  simple_exp _LT simple_exp.    (17)
+	simple_exp:  simple_exp._PLUS term 
+	simple_exp:  simple_exp._MINUS term 
+
+	_PLUS  shift 30
+	_MINUS  shift 31
+	.  reduce 17 (src line 195)
+
+
+state 39
+	exp:  simple_exp _EQ simple_exp.    (18)
+	simple_exp:  simple_exp._PLUS term 
+	simple_exp:  simple_exp._MINUS term 
+
+	_PLUS  shift 30
+	_MINUS  shift 31
+	.  reduce 18 (src line 205)
+
+
+state 40
+	simple_exp:  simple_exp _PLUS term.    (20)
+	term:  term._TIMES factor 
+	term:  term._OVER factor 
+
+	_TIMES  shift 32
+	_OVER  shift 33
+	.  reduce 20 (src line 219)
+
+
+state 41
+	simple_exp:  simple_exp _MINUS term.    (21)
+	term:  term._TIMES factor 
+	term:  term._OVER factor 
+
+	_TIMES  shift 32
+	_OVER  shift 33
+	.  reduce 21 (src line 229)
+
+
+state 42
+	term:  term _TIMES factor.    (23)
+
+	.  reduce 23 (src line 243)
+
+
+state 43
+	term:  term _OVER factor.    (24)
+
+	.  reduce 24 (src line 253)
+
+
+state 44
+	factor:  _LPAREN exp _RPAREN.    (26)
+
+	.  reduce 26 (src line 267)
+
+
+state 45
+	repeat_stmt:  _REPEAT stmt_seq _UNTIL exp.    (13)
+
+	.  reduce 13 (src line 149)
+
+
+state 46
+	if_stmt:  _IF exp _THEN stmt_seq _END.    (11)
+
+	.  reduce 11 (src line 124)
+
+
+state 47
+	if_stmt:  _IF exp _THEN stmt_seq _ELSE.stmt_seq _END 
+	stmt: .    (10)
+
+	_IDENT  shift 11
+	_IF  shift 9
+	_REPEAT  shift 10
+	_READ  shift 12
+	_WRITE  shift 13
+	.  reduce 10 (src line 120)
+
+	assign_stmt  goto 6
+	if_stmt  goto 4
+	repeat_stmt  goto 5
+	read_stmt  goto 7
+	write_stmt  goto 8
+	stmt  goto 3
+	stmt_seq  goto 48
+
+state 48
+	stmt_seq:  stmt_seq._SEMI stmt 
+	if_stmt:  _IF exp _THEN stmt_seq _ELSE stmt_seq._END 
+
+	_END  shift 49
+	_SEMI  shift 14
+	.  error
+
+
+state 49
+	if_stmt:  _IF exp _THEN stmt_seq _ELSE stmt_seq _END.    (12)
+
+	.  reduce 12 (src line 135)
+
+
+23 terminals, 13 nonterminals
+29 grammar rules, 50/8000 states
+0 shift/reduce, 1 reduce/reduce conflicts reported
+62 working sets used
+memory: parser 66/120000
+47 extra closures
+84 shift entries, 2 exceptions
+26 goto entries
+41 entries saved by goto default
+Optimizer space used: output 54/120000
+54 table entries, 0 zero
+maximum spread: 23, maximum offset: 47
