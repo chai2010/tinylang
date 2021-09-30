@@ -1,0 +1,11 @@
+// sum = 1 + 2 + ... + n
+
+read n;
+if 0 < n then
+  sum := 0;
+  repeat
+    sum := sum + n;
+    n := n - 1
+  until n = 0;
+  write sum
+end
