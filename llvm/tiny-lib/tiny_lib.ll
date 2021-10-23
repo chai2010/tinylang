@@ -5,7 +5,8 @@ target triple = "x86_64-apple-macosx10.15.4"
 
 @.str = private unnamed_addr constant [7 x i8] c"READ: \00", align 1
 @.str.1 = private unnamed_addr constant [3 x i8] c"%d\00", align 1
-@.str.2 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@.str.2 = private unnamed_addr constant [3 x i8] c"%c\00", align 1
+@.str.3 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
 define i32 @__tiny_read() #0 {
@@ -25,7 +26,21 @@ define void @__tiny_write(i32) #0 {
   %2 = alloca i32, align 4
   store i32 %0, i32* %2, align 4
   %3 = load i32, i32* %2, align 4
-  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.2, i64 0, i64 0), i32 %3)
+  %4 = icmp sgt i32 %3, 1048576
+  br i1 %4, label %5, label %9
+
+5:                                                ; preds = %1
+  %6 = load i32, i32* %2, align 4
+  %7 = sub nsw i32 %6, 1048576
+  %8 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 0, i64 0), i32 %7)
+  br label %12
+
+9:                                                ; preds = %1
+  %10 = load i32, i32* %2, align 4
+  %11 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.3, i64 0, i64 0), i32 %10)
+  br label %12
+
+12:                                               ; preds = %9, %5
   ret void
 }
 

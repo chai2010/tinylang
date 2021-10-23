@@ -10,5 +10,9 @@ int __tiny_read() {
 }
 
 void __tiny_write(int x) {
+	if(x > 1024*1024) {
+		printf("%c", x-1024*1024);
+		return;
+	}
 	printf("%d\n", x);
 }
