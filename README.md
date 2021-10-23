@@ -8,7 +8,7 @@ Tiny语言是[《编译原理及实践》](https://book.douban.com/subject/10880
 实现原理：
 
 - [COMET虚拟计算机说明](./comet/README.md)
-- [COMET虚拟机的设计与实现.pdf](./docs/comet-vm.pdf)
+- [COMET虚拟机的设计与实现.pdf](./_docs/comet-vm.pdf)
 
 ## 例子
 
@@ -109,6 +109,29 @@ $ wasm2wat hello.wasm > hello.wast
 ```
 
 如果要单独执行输出的 WebAssembly 模块, 需要注入 `__tiny_read` 和 `__tiny_write` 函数。
+
+
+## LLVM 支持
+
+假设在 `darwin/amd64` 环境, 切换到 `llvm` 目录, 通过以下命令将 `hello.tiny` 编译为 LLVM-IR 格式:
+
+```
+$ go run main.go hello.tiny > a.out.ll
+```
+
+然后用Clang命令将 LLVM-IR 文件编译为本地课执行程序:
+
+```
+$ clang -Wno-override-module -o a.out.exe a.out.ll
+```
+
+执行输出的 `a.out.exe` 计算 1 到 100 的和, 结果是 5050.
+
+```
+$ ./a.out.exe 
+READ: 100
+5050
+```
 
 ## 版权
 
