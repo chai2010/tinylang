@@ -1,6 +1,11 @@
 
 # Tiny玩具语言(Go语言版)
 
+- [蚂蚁 - 可信原生技术部 - 云原生运维专家(杭州P7-8)](https://github.com/chai2010/chai2010/blob/master/jobs.md)
+- [蚂蚁 - 可信原生技术部 - 专用编程语言设计研发(杭州P7-8)](https://github.com/chai2010/chai2010/blob/master/jobs.md)
+
+---
+
 Tiny语言是[《编译原理及实践》](https://book.douban.com/subject/1088057/)书中定义的玩具语言。
 
 这里是Go语言实现(注释采用Go语言风格)。
