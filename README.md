@@ -1,7 +1,8 @@
 
 # Tiny玩具语言(Go语言版)
 
-- *KusonStack一站式可编程配置技术栈: https://github.com/KusionStack/kusion*
+- *KusonStack一站式可编程配置技术栈(Go): https://github.com/KusionStack/kusion*
+- *KCL 配置编程语言(Rust): https://github.com/KusionStack/KCLVM*
 - *凹语言™: https://github.com/wa-lang/wa*
 
 ---
