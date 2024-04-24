@@ -2,4 +2,4 @@
 
 module github.com/chai2010/tinylang
 
-go 1.13
+go 1.17

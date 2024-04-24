@@ -1,6 +1,6 @@
 module github.com/chai2010/tinylang/wasm
 
-go 1.16
+go 1.17
 
 require (
 	github.com/chai2010/tinylang v1.2.0
