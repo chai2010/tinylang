@@ -4,7 +4,7 @@
 
 ## 语法高亮
 
-在控制台通过 `sublime.packages_path()` 命令查看包目录，将 `tiny.sublime-syntax` 文件复制到 `User` 子目录中。然后重启 Sublime Text 打开凹语言代码，效果如下：
+在控制台通过 `sublime.packages_path()` 命令查看包目录，将 `tiny.sublime-syntax` 文件复制到 `User` 子目录中。然后重启 Sublime Text 打开 Tiny语言代码，效果如下：
 
 ![](preview.jpg)
 
